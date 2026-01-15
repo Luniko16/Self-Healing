@@ -1,0 +1,75 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+*.log
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+Logs/*.log
+CrossPlatform/logs/*.log
+*.log
+
+# Reports
+Reports/*.html
+!Reports/.gitkeep
+
+# Test files
+test_*.py
+*_test.py
+dashboard_output.html
+dashboard_current.html
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.cache
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Config (keep templates, ignore actual configs with sensitive data)
+Config/RMMConfig.json
+!Config/RMMConfig.json.template
+
+# Sensitive data
+*.key
+*.pem
+*.pfx
+secrets.json
+credentials.json

@@ -1,0 +1,20 @@
+# Self-Healing Agent - Cross-Platform Edition
+# Python Dependencies
+
+# Core dependencies
+psutil>=5.8.0          # Cross-platform system and process utilities
+requests>=2.26.0       # HTTP library for RMM integration
+
+# Web Dashboard
+Flask>=2.0.0           # Web framework for IT admin dashboard
+
+# Optional dependencies
+distro>=1.6.0          # Linux distribution detection (Linux only)
+
+# Windows-specific (optional)
+pywin32>=301; sys_platform == 'win32'  # Windows API access
+
+# Development dependencies (optional)
+pytest>=7.0.0          # Testing framework
+black>=22.0.0          # Code formatter
+pylint>=2.12.0         # Code linter

@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="utf-8"?>
+<policyDefinitionResources xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
+                          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+                          revision="1.0" 
+                          schemaVersion="1.0" 
+                          xmlns="http://schemas.microsoft.com/GroupPolicy/2006/07/PolicyDefinitions">
+  
+  <displayName>Self-Healing Agent Policy Definitions</displayName>
+  <description>Administrative templates for Self-Healing IT Support Agent</description>
+  
+  <resources>
+    <stringTable>
+      
+      <!-- Categories -->
+      <string id="SelfHealingAgent">Self-Healing Agent</string>
+      <string id="ModuleSettings">Module Settings</string>
+      <string id="SafetySettings">Safety Settings</string>
+      
+      <!-- Enable Agent -->
+      <string id="EnableAgent">Enable Self-Healing Agent</string>
+      <string id="EnableAgent_Help">This policy setting enables or disables the Self-Healing Agent on this computer.
+
+If you enable this policy setting, the Self-Healing Agent will run according to its scheduled task and configuration.
+
+If you disable this policy setting, the Self-Healing Agent will not perform any automated remediation.
+
+If you do not configure this policy setting, the agent will use its local configuration.</string>
+      
+      <!-- Network Module -->
+      <string id="EnableNetworkModule">Enable Network Repair Module</string>
+      <string id="EnableNetworkModule_Help">This policy setting enables or disables the Network Repair module.
+
+If you enable this policy setting, the agent will detect and repair network connectivity issues including:
+- Internet connectivity failures
+- DNS resolution problems
+- Network adapter issues
+- DHCP configuration problems
+
+If you disable this policy setting, network issues will be detected but not automatically repaired.
+
+If you do not configure this policy setting, the module will use its local configuration.</string>
+      
+      <!-- Printer Module -->
+      <string id="EnablePrinterModule">Enable Printer Repair Module</string>
+      <string id="EnablePrinterModule_Help">This policy setting enables or disables the Printer Repair module.
+
+If you enable this policy setting, the agent will detect and repair printer issues including:
+- Print Spooler service failures
+- Stuck print jobs
+- Printer offline status
+- Printer driver issues
+
+If you disable this policy setting, printer issues will be detected but not automatically repaired.
+
+If you do not configure this policy setting, the module will use its local configuration.</string>
+      
+      <!-- Disk Module -->
+      <string id="EnableDiskModule">Enable Disk Cleanup Module</string>
+      <string id="EnableDiskModule_Help">This policy setting enables or disables the Disk Cleanup module.
+
+If you enable this policy setting, the agent will detect low disk space and automatically clean:
+- Temporary files
+- Windows Update cache
+- Browser caches
+- Recycle Bin
+
+If you disable this policy setting, disk space issues will be detected but not automatically cleaned.
+
+If you do not configure this policy setting, the module will use its local configuration.</string>
+      
+      <!-- Service Module -->
+      <string id="EnableServiceModule">Enable Service Repair Module</string>
+      <string id="EnableServiceModule_Help">This policy setting enables or disables the Service Repair module.
+
+If you enable this policy setting, the agent will detect and restart critical Windows services including:
+- Print Spooler
+- DHCP Client
+- DNS Client
+- Windows Defender
+- Windows Update
+- Windows Time
+
+If you disable this policy setting, service issues will be detected but not automatically repaired.
+
+If you do not configure this policy setting, the module will use its local configuration.</string>
+      
+      <!-- Max Remediations Per Day -->
+      <string id="MaxRemediationsPerDay">Maximum Remediations Per Day</string>
+      <string id="MaxRemediationsPerDay_Help">This policy setting specifies the maximum number of remediation attempts allowed per day.
+
+This prevents the agent from repeatedly attempting to fix the same issue if the underlying problem cannot be resolved automatically.
+
+Recommended value: 5
+
+Valid range: 1-50
+
+If you do not configure this policy setting, the agent will use its local configuration (default: 5).</string>
+      
+      <!-- Business Hours Start -->
+      <string id="BusinessHoursStart">Business Hours Start Time</string>
+      <string id="BusinessHoursStart_Help">This policy setting specifies when business hours begin (24-hour format).
+
+The agent will avoid performing remediation during business hours to minimize user disruption.
+
+Example: 9 = 9:00 AM
+
+Valid range: 0-23
+
+If you do not configure this policy setting, the agent will use its local configuration (default: 9).</string>
+      
+      <!-- Business Hours End -->
+      <string id="BusinessHoursEnd">Business Hours End Time</string>
+      <string id="BusinessHoursEnd_Help">This policy setting specifies when business hours end (24-hour format).
+
+The agent will avoid performing remediation during business hours to minimize user disruption.
+
+Example: 18 = 6:00 PM
+
+Valid range: 0-23
+
+If you do not configure this policy setting, the agent will use its local configuration (default: 18).</string>
+      
+      <!-- Disk Cleanup Threshold -->
+      <string id="DiskCleanupThreshold">Disk Cleanup Threshold (GB)</string>
+      <string id="DiskCleanupThreshold_Help">This policy setting specifies the free disk space threshold (in GB) that triggers automatic cleanup.
+
+When free disk space falls below this threshold, the agent will automatically clean temporary files and caches.
+
+Recommended value: 10 GB
+
+Valid range: 1-100 GB
+
+If you do not configure this policy setting, the agent will use its local configuration (default: 10).</string>
+      
+      <!-- Enable Safety Checks -->
+      <string id="EnableSafetyChecks">Enable Safety Checks</string>
+      <string id="EnableSafetyChecks_Help">This policy setting enables or disables safety checks before remediation.
+
+Safety checks include:
+- Business hours detection
+- Active user session detection
+- Pending reboot detection
+- System uptime validation
+- CPU usage monitoring
+
+If you enable this policy setting, the agent will perform safety checks and may postpone remediation to avoid user disruption.
+
+If you disable this policy setting, the agent will perform remediation immediately without safety checks (not recommended for production environments).
+
+If you do not configure this policy setting, the agent will use its local configuration (default: enabled).</string>
+      
+      <!-- Check Interval Hours -->
+      <string id="CheckIntervalHours">Check Interval (Hours)</string>
+      <string id="CheckIntervalHours_Help">This policy setting specifies how often (in hours) the agent should check for issues.
+
+This setting affects the scheduled task frequency.
+
+Recommended value: 4 hours
+
+Valid range: 1-24 hours
+
+If you do not configure this policy setting, the agent will use its local configuration (default: 4).</string>
+      
+      <!-- Log Retention Days -->
+      <string id="LogRetentionDays">Log Retention Period (Days)</string>
+      <string id="LogRetentionDays_Help">This policy setting specifies how many days to retain log files before automatic deletion.
+
+Older log files will be automatically deleted to conserve disk space.
+
+Recommended value: 30 days
+
+Valid range: 7-365 days
+
+If you do not configure this policy setting, the agent will use its local configuration (default: 30).</string>
+      
+    </stringTable>
+    
+    <presentationTable>
+      <presentation id="MaxRemediationsPerDay">
+        <decimalTextBox refId="MaxRemediationsPerDay_Value" defaultValue="5">Maximum remediations per day:</decimalTextBox>
+      </presentation>
+      
+      <presentation id="BusinessHoursStart">
+        <decimalTextBox refId="BusinessHoursStart_Value" defaultValue="9">Business hours start (0-23):</decimalTextBox>
+      </presentation>
+      
+      <presentation id="BusinessHoursEnd">
+        <decimalTextBox refId="BusinessHoursEnd_Value" defaultValue="18">Business hours end (0-23):</decimalTextBox>
+      </presentation>
+      
+      <presentation id="DiskCleanupThreshold">
+        <decimalTextBox refId="DiskCleanupThreshold_Value" defaultValue="10">Disk cleanup threshold (GB):</decimalTextBox>
+      </presentation>
+      
+      <presentation id="CheckIntervalHours">
+        <decimalTextBox refId="CheckIntervalHours_Value" defaultValue="4">Check interval (hours):</decimalTextBox>
+      </presentation>
+      
+      <presentation id="LogRetentionDays">
+        <decimalTextBox refId="LogRetentionDays_Value" defaultValue="30">Log retention (days):</decimalTextBox>
+      </presentation>
+    </presentationTable>
+    
+  </resources>
+</policyDefinitionResources>

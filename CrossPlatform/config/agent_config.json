@@ -1,0 +1,32 @@
+{
+  "check_interval_hours": 4,
+  "business_hours_start": 9,
+  "business_hours_end": 18,
+  "disk_cleanup_threshold_gb": 10,
+  "disk_cleanup_critical_gb": 5,
+  "max_remediations_per_day": 5,
+  "enabled_modules": [
+    "network",
+    "disk",
+    "service",
+    "printer"
+  ],
+  "enable_safety_checks": true,
+  "run_silently": true,
+  "minimize_user_impact": true,
+  "log_level": "INFO",
+  "version": "1.0.0",
+  "_comments": {
+    "check_interval_hours": "How often to run checks (in hours)",
+    "business_hours_start": "Start of business hours (24h format, 0-23)",
+    "business_hours_end": "End of business hours (24h format, 0-23)",
+    "disk_cleanup_threshold_gb": "Warning threshold for low disk space (GB)",
+    "disk_cleanup_critical_gb": "Critical threshold for low disk space (GB)",
+    "max_remediations_per_day": "Maximum number of remediation attempts per day",
+    "enabled_modules": "List of modules to run: network, disk, service, printer",
+    "enable_safety_checks": "Enable safety checks before remediation",
+    "run_silently": "Run without user interaction",
+    "minimize_user_impact": "Minimize impact on user productivity",
+    "log_level": "Logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL"
+  }
+}

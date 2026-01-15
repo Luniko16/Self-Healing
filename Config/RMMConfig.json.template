@@ -1,0 +1,26 @@
+{
+  "Platform": "Webhook",
+  "Enabled": false,
+  "APIEndpoint": "https://your-rmm-platform.com/api/alerts",
+  "APIKey": "YOUR_API_KEY_HERE",
+  "CompanyID": "YOUR_COMPANY_ID",
+  "ClientID": "YOUR_CLIENT_ID",
+  "SendOnDetection": true,
+  "SendOnRemediation": true,
+  "SendOnVerification": false,
+  "SendDailySummary": true,
+  "MinimumSeverity": "Warning",
+  "Notes": {
+    "Platform": "Options: ConnectWise, NinjaRMM, DattoRMM, Atera, Syncro, Webhook",
+    "Enabled": "Set to true to enable RMM integration",
+    "APIEndpoint": "Your RMM platform API endpoint URL",
+    "APIKey": "Your API key or authentication token",
+    "CompanyID": "Your company/customer ID in the RMM platform",
+    "ClientID": "Client ID for ConnectWise authentication",
+    "SendOnDetection": "Send alert when issues are detected",
+    "SendOnRemediation": "Send alert after remediation attempts",
+    "SendOnVerification": "Send alert after verification",
+    "SendDailySummary": "Send daily summary report",
+    "MinimumSeverity": "Minimum severity to send alerts (Info, Warning, Error, Critical)"
+  }
+}

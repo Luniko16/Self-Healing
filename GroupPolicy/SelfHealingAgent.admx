@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<policyDefinitions xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+                   revision="1.0" 
+                   schemaVersion="1.0" 
+                   xmlns="http://schemas.microsoft.com/GroupPolicy/2006/07/PolicyDefinitions">
+  
+  <policyNamespaces>
+    <target prefix="selfheal" namespace="SelfHealingAgent.Policies" />
+    <using prefix="windows" namespace="Microsoft.Policies.Windows" />
+  </policyNamespaces>
+  
+  <resources minRequiredRevision="1.0" />
+  
+  <categories>
+    <category name="SelfHealingAgent" displayName="$(string.SelfHealingAgent)">
+      <parentCategory ref="windows:System" />
+    </category>
+    <category name="ModuleSettings" displayName="$(string.ModuleSettings)">
+      <parentCategory ref="SelfHealingAgent" />
+    </category>
+    <category name="SafetySettings" displayName="$(string.SafetySettings)">
+      <parentCategory ref="SelfHealingAgent" />
+    </category>
+  </categories>
+  
+  <policies>
+    
+    <!-- Enable/Disable Agent -->
+    <policy name="EnableAgent" class="Machine" displayName="$(string.EnableAgent)" 
+            explainText="$(string.EnableAgent_Help)" 
+            key="Software\Policies\SelfHealingAgent" 
+            valueName="Enabled">
+      <parentCategory ref="SelfHealingAgent" />
+      <supportedOn ref="windows:SUPPORTED_Windows10" />
+      <enabledValue>
+        <decimal value="1" />
+      </enabledValue>
+      <disabledValue>
+        <decimal value="0" />
+      </disabledValue>
+    </policy>
+    
+    <!-- Enable Network Module -->
+    <policy name="EnableNetworkModule" class="Machine" displayName="$(string.EnableNetworkModule)" 
+            explainText="$(string.EnableNetworkModule_Help)" 
+            key="Software\Policies\SelfHealingAgent\Modules" 
+            valueName="NetworkEnabled">
+      <parentCategory ref="ModuleSettings" />
+      <supportedOn ref="windows:SUPPORTED_Windows10" />
+      <enabledValue>
+        <decimal value="1" />
+      </enabledValue>
+      <disabledValue>
+        <decimal value="0" />
+      </disabledValue>
+    </policy>
+    
+    <!-- Enable Printer Module -->
+    <policy name="EnablePrinterModule" class="Machine" displayName="$(string.EnablePrinterModule)" 
+            explainText="$(string.EnablePrinterModule_Help)" 
+            key="Software\Policies\SelfHealingAgent\Modules" 
+            valueName="PrinterEnabled">
+      <parentCategory ref="ModuleSettings" />
+      <supportedOn ref="windows:SUPPORTED_Windows10" />
+      <enabledValue>
+        <decimal value="1" />
+      </enabledValue>
+      <disabledValue>
+        <decimal value="0" />
+      </disabledValue>
+    </policy>
+    
+    <!-- Enable Disk Module -->
+    <policy name="EnableDiskModule" class="Machine" displayName="$(string.EnableDiskModule)" 
+            explainText="$(string.EnableDiskModule_Help)" 
+            key="Software\Policies\SelfHealingAgent\Modules" 
+            valueName="DiskEnabled">
+      <parentCategory ref="ModuleSettings" />
+      <supportedOn ref="windows:SUPPORTED_Windows10" />
+      <enabledValue>
+        <decimal value="1" />
+      </enabledValue>
+      <disabledValue>
+        <decimal value="0" />
+      </disabledValue>
+    </policy>
+    
+    <!-- Enable Service Module -->
+    <policy name="EnableServiceModule" class="Machine" displayName="$(string.EnableServiceModule)" 
+            explainText="$(string.EnableServiceModule_Help)" 
+            key="Software\Policies\SelfHealingAgent\Modules" 
+            valueName="ServiceEnabled">
+      <parentCategory ref="ModuleSettings" />
+      <supportedOn ref="windows:SUPPORTED_Windows10" />
+      <enabledValue>
+        <decimal value="1" />
+      </enabledValue>
+      <disabledValue>
+        <decimal value="0" />
+      </disabledValue>
+    </policy>
+    
+    <!-- Max Remediations Per Day -->
+    <policy name="MaxRemediationsPerDay" class="Machine" displayName="$(string.MaxRemediationsPerDay)" 
+            explainText="$(string.MaxRemediationsPerDay_Help)" 
+            key="Software\Policies\SelfHealingAgent" 
+            valueName="MaxRemediationsPerDay">
+      <parentCategory ref="SafetySettings" />
+      <supportedOn ref="windows:SUPPORTED_Windows10" />
+      <enabledList>
+        <item key="Software\Policies\SelfHealingAgent" valueName="MaxRemediationsPerDay">
+          <value>
+            <decimal value="5" />
+          </value>
+        </item>
+      </enabledList>
+      <elements>
+        <decimal id="MaxRemediationsPerDay_Value" valueName="MaxRemediationsPerDay" minValue="1" maxValue="50" />
+      </elements>
+    </policy>
+    
+    <!-- Business Hours Start -->
+    <policy name="BusinessHoursStart" class="Machine" displayName="$(string.BusinessHoursStart)" 
+            explainText="$(string.BusinessHoursStart_Help)" 
+            key="Software\Policies\SelfHealingAgent" 
+            valueName="BusinessHoursStart">
+      <parentCategory ref="SafetySettings" />
+      <supportedOn ref="windows:SUPPORTED_Windows10" />
+      <elements>
+        <decimal id="BusinessHoursStart_Value" valueName="BusinessHoursStart" minValue="0" maxValue="23" />
+      </elements>
+    </policy>
+    
+    <!-- Business Hours End -->
+    <policy name="BusinessHoursEnd" class="Machine" displayName="$(string.BusinessHoursEnd)" 
+            explainText="$(string.BusinessHoursEnd_Help)" 
+            key="Software\Policies\SelfHealingAgent" 
+            valueName="BusinessHoursEnd">
+      <parentCategory ref="SafetySettings" />
+      <supportedOn ref="windows:SUPPORTED_Windows10" />
+      <elements>
+        <decimal id="BusinessHoursEnd_Value" valueName="BusinessHoursEnd" minValue="0" maxValue="23" />
+      </elements>
+    </policy>
+    
+    <!-- Disk Cleanup Threshold -->
+    <policy name="DiskCleanupThreshold" class="Machine" displayName="$(string.DiskCleanupThreshold)" 
+            explainText="$(string.DiskCleanupThreshold_Help)" 
+            key="Software\Policies\SelfHealingAgent" 
+            valueName="DiskCleanupThresholdGB">
+      <parentCategory ref="ModuleSettings" />
+      <supportedOn ref="windows:SUPPORTED_Windows10" />
+      <elements>
+        <decimal id="DiskCleanupThreshold_Value" valueName="DiskCleanupThresholdGB" minValue="1" maxValue="100" />
+      </elements>
+    </policy>
+    
+    <!-- Enable Safety Checks -->
+    <policy name="EnableSafetyChecks" class="Machine" displayName="$(string.EnableSafetyChecks)" 
+            explainText="$(string.EnableSafetyChecks_Help)" 
+            key="Software\Policies\SelfHealingAgent" 
+            valueName="EnableSafetyChecks">
+      <parentCategory ref="SafetySettings" />
+      <supportedOn ref="windows:SUPPORTED_Windows10" />
+      <enabledValue>
+        <decimal value="1" />
+      </enabledValue>
+      <disabledValue>
+        <decimal value="0" />
+      </disabledValue>
+    </policy>
+    
+    <!-- Check Interval Hours -->
+    <policy name="CheckIntervalHours" class="Machine" displayName="$(string.CheckIntervalHours)" 
+            explainText="$(string.CheckIntervalHours_Help)" 
+            key="Software\Policies\SelfHealingAgent" 
+            valueName="CheckIntervalHours">
+      <parentCategory ref="SelfHealingAgent" />
+      <supportedOn ref="windows:SUPPORTED_Windows10" />
+      <elements>
+        <decimal id="CheckIntervalHours_Value" valueName="CheckIntervalHours" minValue="1" maxValue="24" />
+      </elements>
+    </policy>
+    
+    <!-- Log Retention Days -->
+    <policy name="LogRetentionDays" class="Machine" displayName="$(string.LogRetentionDays)" 
+            explainText="$(string.LogRetentionDays_Help)" 
+            key="Software\Policies\SelfHealingAgent" 
+            valueName="MaxLogAgeDays">
+      <parentCategory ref="SelfHealingAgent" />
+      <supportedOn ref="windows:SUPPORTED_Windows10" />
+      <elements>
+        <decimal id="LogRetentionDays_Value" valueName="MaxLogAgeDays" minValue="7" maxValue="365" />
+      </elements>
+    </policy>
+    
+  </policies>
+</policyDefinitions>
