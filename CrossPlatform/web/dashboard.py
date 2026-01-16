@@ -22,6 +22,7 @@ from system_monitoring import SystemMonitor
 from software_inventory import SoftwareInventory
 from event_log_analyzer import EventLogAnalyzer
 from security_compliance import SecurityCompliance
+from public_status import PublicStatusProvider
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'self-healing-agent-secret-key-change-in-production'
@@ -78,6 +79,21 @@ def index():
 def monitoring():
     """System monitoring page"""
     return render_template('monitoring.html')
+
+@app.route('/status')
+def public_status():
+    """Public status page for citizens"""
+    return render_template('public_status.html')
+
+@app.route('/public')
+def public_simple():
+    """Simple public status page"""
+    return render_template('public_simple.html')
+
+@app.route('/test')
+def test_status():
+    """Test page for debugging"""
+    return render_template('test_status.html')
 
 @app.route('/api/status')
 def get_status():
@@ -293,6 +309,26 @@ def get_security_compliance():
     try:
         compliance = SecurityCompliance()
         return jsonify(compliance.get_compliance_report())
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/public/status')
+def get_public_status():
+    """Get public service status"""
+    try:
+        provider = PublicStatusProvider()
+        return jsonify(provider.get_all_public_status())
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/public/search')
+def search_public_services():
+    """Search public services"""
+    try:
+        query = request.args.get('q', '')
+        provider = PublicStatusProvider()
+        results = provider.search_services(query)
+        return jsonify({'services': results})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

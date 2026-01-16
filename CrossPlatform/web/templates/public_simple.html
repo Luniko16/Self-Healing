@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <title>System Status</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0a1628 0%, #1b263b 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 40px 20px;
+            color: white;
+            animation: fadeIn 0.6s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .header h1 {
+            font-size: 42px;
+            font-weight: 800;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #fff 0%, #e0e7ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .header p {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .status-hero {
+            background: white;
+            border-radius: 30px;
+            padding: 60px 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            margin-bottom: 40px;
+            text-align: center;
+            animation: slideUp 0.8s ease;
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .status-icon {
+            font-size: 100px;
+            margin-bottom: 25px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+        }
+        
+        .status-title {
+            font-size: 42px;
+            font-weight: 800;
+            margin-bottom: 15px;
+            line-height: 1.2;
+        }
+        
+        .status-operational { color: #10b981; }
+        .status-degraded { color: #f59e0b; }
+        .status-outage { color: #ef4444; }
+        
+        .status-subtitle {
+            font-size: 18px;
+            color: #6b7280;
+            margin-bottom: 25px;
+        }
+        
+        .status-timestamp {
+            display: inline-block;
+            background: #f3f4f6;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            color: #6b7280;
+        }
+        
+        .services-section {
+            margin-bottom: 40px;
+        }
+        
+        .section-title {
+            color: white;
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        
+        .service-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            animation: fadeIn 0.6s ease;
+            animation-fill-mode: both;
+        }
+        
+        .service-card:nth-child(1) { animation-delay: 0.1s; }
+        .service-card:nth-child(2) { animation-delay: 0.2s; }
+        .service-card:nth-child(3) { animation-delay: 0.3s; }
+        .service-card:nth-child(4) { animation-delay: 0.4s; }
+        
+        .service-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .service-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        
+        .service-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+        
+        .service-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: blink 2s ease-in-out infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        
+        .status-dot.ok { background: #10b981; }
+        .status-dot.issue { background: #ef4444; }
+        
+        .service-description {
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .footer {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            padding: 20px;
+        }
+        
+        .loading {
+            color: white;
+            font-size: 24px;
+            text-align: center;
+            padding: 100px 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 { font-size: 32px; }
+            .status-icon { font-size: 80px; }
+            .status-title { font-size: 32px; }
+            .status-hero { padding: 40px 25px; }
+            .services-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>&#127973; IT Services Status</h1>
+            <p>Check if our systems are available</p>
+        </div>
+        
+        <div class="status-hero" id="status-hero">
+            <div class="loading">Checking system status...</div>
+        </div>
+        
+        <div class="services-section" id="services-section" style="display: none;">
+            <div class="section-title">Service Availability</div>
+            <div class="services-grid" id="services-grid"></div>
+        </div>
+        
+        <div class="footer">
+            Auto-refreshing every 30 seconds
+        </div>
+    </div>
+
+    <script>
+        const serviceIcons = {
+            'Internet': '&#127760;',
+            'Print': '&#128424;',
+            'File': '&#128193;',
+            'Network': '&#128225;',
+            'Storage': '&#128190;'
+        };
+        
+        const serviceDescriptions = {
+            'Internet Connectivity': 'Access to online resources and websites',
+            'Print Services': 'Ability to print documents',
+            'File Sharing': 'Access to shared files and folders',
+            'DNS Services': 'Network name resolution',
+            'Drive C:': 'Main storage space',
+            'Drive D:': 'Additional storage'
+        };
+        
+        function getServiceIcon(name) {
+            for (let key in serviceIcons) {
+                if (name.includes(key)) return serviceIcons[key];
+            }
+            return '&#9881;';
+        }
+        
+        function loadStatus() {
+            fetch('/api/public/status')
+                .then(r => r.json())
+                .then(data => {
+                    displayStatus(data);
+                })
+                .catch(error => {
+                    document.getElementById('status-hero').innerHTML = `
+                        <div class="status-icon">&#10060;</div>
+                        <div class="status-title status-outage">Unable to Check Status</div>
+                        <div class="status-subtitle">Please try again in a moment</div>
+                    `;
+                });
+        }
+        
+        function displayStatus(data) {
+            const hero = document.getElementById('status-hero');
+            
+            let icon, title, subtitle, statusClass;
+            
+            if (data.health_percentage >= 80) {
+                icon = '&#9989;';
+                title = 'All Systems Operational';
+                subtitle = 'All services are running normally';
+                statusClass = 'status-operational';
+            } else if (data.health_percentage > 50) {
+                icon = '&#9888;';
+                title = 'Some Services Affected';
+                subtitle = 'Most services are available';
+                statusClass = 'status-degraded';
+            } else {
+                icon = '&#10060;';
+                title = 'System is Down';
+                subtitle = 'Multiple services are unavailable';
+                statusClass = 'status-outage';
+            }
+            
+            const timestamp = new Date(data.timestamp).toLocaleString();
+            
+            hero.innerHTML = `
+                <div class="status-icon">${icon}</div>
+                <div class="status-title ${statusClass}">${title}</div>
+                <div class="status-subtitle">${subtitle}</div>
+                <div class="status-timestamp">Last checked: ${timestamp}</div>
+            `;
+            
+            // Display individual services
+            displayServices(data.services);
+        }
+        
+        function displayServices(services) {
+            const grid = document.getElementById('services-grid');
+            const section = document.getElementById('services-section');
+            
+            // Filter to only user-facing services
+            const userServices = services.filter(s => 
+                s.name.includes('Internet') || 
+                s.name.includes('Print') || 
+                s.name.includes('File') || 
+                s.name.includes('Drive C')
+            );
+            
+            grid.innerHTML = userServices.map(service => {
+                const icon = getServiceIcon(service.name);
+                const statusDot = service.operational ? 'ok' : 'issue';
+                const statusText = service.operational ? 'Available' : 'Unavailable';
+                const description = serviceDescriptions[service.name] || 'System service';
+                
+                return `
+                    <div class="service-card">
+                        <div class="service-icon">${icon}</div>
+                        <div class="service-name">${service.name}</div>
+                        <div class="service-status">
+                            <div class="status-dot ${statusDot}"></div>
+                            ${statusText}
+                        </div>
+                        <div class="service-description">${description}</div>
+                    </div>
+                `;
+            }).join('');
+            
+            section.style.display = 'block';
+        }
+        
+        // Auto-refresh every 30 seconds
+        setInterval(loadStatus, 30000);
+        
+        // Initial load
+        loadStatus();
+    </script>
+</body>
+</html>
