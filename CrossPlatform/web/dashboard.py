@@ -18,6 +18,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent / 'modules'))
 
 from platform_detector import platform_detector
 from logger import get_logger
+from system_monitoring import SystemMonitor
+from software_inventory import SoftwareInventory
+from event_log_analyzer import EventLogAnalyzer
+from security_compliance import SecurityCompliance
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'self-healing-agent-secret-key-change-in-production'
@@ -69,6 +73,11 @@ def index():
     return render_template('dashboard.html', 
                          platform=str(platform_detector),
                          is_admin=platform_detector.is_admin())
+
+@app.route('/monitoring')
+def monitoring():
+    """System monitoring page"""
+    return render_template('monitoring.html')
 
 @app.route('/api/status')
 def get_status():
@@ -249,6 +258,43 @@ def get_logs():
         recent_logs = lines[-50:] if len(lines) > 50 else lines
     
     return jsonify({'logs': recent_logs})
+
+@app.route('/api/system/metrics')
+def get_system_metrics():
+    """Get real-time system metrics"""
+    try:
+        monitor = SystemMonitor()
+        return jsonify(monitor.get_all_metrics())
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/software/inventory')
+def get_software_inventory():
+    """Get software inventory"""
+    try:
+        inventory = SoftwareInventory()
+        return jsonify(inventory.get_inventory_report())
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/events/critical')
+def get_critical_events():
+    """Get critical system events"""
+    try:
+        hours = request.args.get('hours', 24, type=int)
+        analyzer = EventLogAnalyzer()
+        return jsonify(analyzer.get_critical_events(hours))
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/security/compliance')
+def get_security_compliance():
+    """Get security compliance status"""
+    try:
+        compliance = SecurityCompliance()
+        return jsonify(compliance.get_compliance_report())
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 def main():
     """Start the dashboard server"""

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -10,7 +10,7 @@
         
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            background: linear-gradient(135deg, #0a1628 0%, #0d1b2a 50%, #1b263b 100%);
             background-size: 400% 400%;
             animation: gradientShift 15s ease infinite;
             min-height: 100vh;
@@ -64,7 +64,7 @@
         .logo {
             width: 60px;
             height: 60px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
             border-radius: 15px;
             display: flex;
             align-items: center;
@@ -80,7 +80,7 @@
         }
         
         .header-title h1 {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             font-size: 32px;
@@ -103,7 +103,7 @@
         }
         
         .badge-platform {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
             color: white;
             box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
         }
@@ -199,7 +199,7 @@
         .summary-card .value {
             font-size: 48px;
             font-weight: 800;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -235,7 +235,7 @@
             padding: 25px;
             margin-bottom: 20px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            border-left: 5px solid #667eea;
+            border-left: 5px solid #1e3a8a;
         }
         
         .module-header {
@@ -329,55 +329,50 @@
     <div class="container">
         <div class="header">
             <div class="header-left">
-                <div class="logo">🛠️</div>
+                <div class="logo">&#128736;</div>
                 <div class="header-title">
                     <h1>Self-Healing Agent</h1>
                     <p>IT Administrator Control Panel</p>
                 </div>
             </div>
-            <div class="header-info">
-                <span class="badge badge-platform">💻 {{ platform }}</span>
+            <a href="/monitoring" style="background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); color: white; padding: 10px 20px; border-radius: 10px; text-decoration: none; font-weight: 600; margin-right: 15px;">&#128202; Advanced Monitoring</a><div class="header-info">
+                <span class="badge badge-platform">{{ platform }}</span>
                 {% if is_admin %}
-                <span class="badge badge-admin">✓ Admin</span>
+                <span class="badge badge-admin">? Admin</span>
                 {% else %}
-                <span class="badge badge-no-admin">⚠ No Admin</span>
+                <span class="badge badge-no-admin">? No Admin</span>
                 {% endif %}
             </div>
         </div>
         
         <div class="controls glass-card">
-            <h2>🔍 Quick Scan</h2>
+            <h2>Quick Scan</h2>
             <div class="button-grid">
                 <button class="scan-button" onclick="startScan(['network', 'disk', 'service', 'printer'])">
-                    <span class="button-icon">🎯</span>
-                    <div class="button-title">Full Scan</div>
+                    <span class="button-icon">&#127919;</span><div class="button-title">Full Scan</div>
                     <div class="button-subtitle">All modules</div>
                 </button>
                 <button class="scan-button" onclick="startScan(['network'])">
-                    <span class="button-icon">🌐</span>
-                    <div class="button-title">Network</div>
+                    <span class="button-icon">&#127760;</span><div class="button-title">Network</div>
                     <div class="button-subtitle">Connectivity</div>
                 </button>
                 <button class="scan-button" onclick="startScan(['disk'])">
-                    <span class="button-icon">💾</span>
-                    <div class="button-title">Disk Space</div>
+                    <span class="button-icon">&#128190;</span><div class="button-title">Disk Space</div>
                     <div class="button-subtitle">Storage</div>
                 </button>
                 <button class="scan-button" onclick="startScan(['service'])">
-                    <span class="button-icon">⚙️</span>
-                    <div class="button-title">Services</div>
+                    <span class="button-icon">&#9881;</span><div class="button-title">Services</div>
                     <div class="button-subtitle">System</div>
                 </button>
                 <button class="scan-button" onclick="startScan(['printer'])">
-                    <span class="button-icon">🖨️</span>
-                    <div class="button-title">Printer</div>
+                    <span class="button-icon">&#128424;</span><div class="button-title">Printer</div>
                     <div class="button-subtitle">Print services</div>
                 </button>
             </div>
         </div>
         
         <div class="status-bar glass-card">
-            <h3>📊 Status</h3>
+            <h3>Status</h3>
             <div class="status-content">
                 <span id="status">Ready to scan</span>
             </div>
@@ -403,7 +398,7 @@
         </div>
         
         <div id="results" class="results glass-card hidden">
-            <h2>📋 Results</h2>
+            <h2>Results</h2>
             <div id="results-content"></div>
         </div>
     </div>
@@ -509,3 +504,4 @@
     </script>
 </body>
 </html>
+
