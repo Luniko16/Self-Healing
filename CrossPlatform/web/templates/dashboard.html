@@ -4,76 +4,449 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Self-Healing Agent Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; margin: 0; }
-        .container { max-width: 1400px; margin: 0 auto; }
-        .header { background: white; padding: 30px; border-radius: 10px; margin-bottom: 20px; }
-        .header h1 { color: #667eea; margin: 0; }
-        .controls { background: white; padding: 25px; border-radius: 10px; margin-bottom: 20px; }
-        .btn { padding: 12px 24px; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; margin-right: 10px; }
-        .btn-primary { background: #667eea; color: white; }
-        .status-bar { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
-        .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 20px; }
-        .summary-card { background: white; padding: 25px; border-radius: 10px; }
-        .summary-card .value { font-size: 36px; font-weight: bold; color: #667eea; }
-        .results { background: white; padding: 25px; border-radius: 10px; }
-        .module-card { border: 2px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 15px; }
-        .issue-item { padding: 12px; background: #f7fafc; border-left: 4px solid #ed8936; margin-bottom: 10px; display: flex; justify-content: space-between; }
-        .btn-small { padding: 6px 12px; font-size: 12px; }
-        .btn-success { background: #48bb78; color: white; }
-        .btn-warning { background: #ed8936; color: white; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .container { max-width: 1600px; margin: 0 auto; position: relative; z-index: 1; }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+        }
+        
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 35px 40px;
+            border-radius: 25px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: slideDown 0.6s ease;
+        }
+        
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .header-left { display: flex; align-items: center; gap: 20px; }
+        
+        .logo {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .header-title h1 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 32px;
+            font-weight: 800;
+        }
+        
+        .header-title p { color: #666; font-size: 14px; margin-top: 5px; font-weight: 500; }
+        
+        .header-info { display: flex; gap: 15px; align-items: center; }
+        
+        .badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .badge-platform {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .badge-admin {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+        }
+        
+        .badge-no-admin {
+            background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+            color: white;
+        }
+        
+        .controls h2 {
+            color: white;
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 25px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .scan-button {
+            background: rgba(255, 255, 255, 0.95);
+            border: none;
+            border-radius: 18px;
+            padding: 25px 20px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .scan-button:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+        }
+        
+        .button-icon { font-size: 42px; margin-bottom: 12px; display: block; }
+        .button-title { font-size: 16px; font-weight: 700; color: #2d3748; margin-bottom: 6px; }
+        .button-subtitle { font-size: 12px; color: #718096; font-weight: 500; }
+        
+        .status-bar h3 {
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        
+        .status-content {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px 25px;
+            border-radius: 15px;
+            color: #2d3748;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .summary-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .summary-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+        }
+        
+        .summary-card h3 {
+            color: #718096;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+        }
+        
+        .summary-card .value {
+            font-size: 48px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .summary-card.success .value {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .summary-card.warning .value {
+            background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .summary-card.danger .value {
+            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .results h2 {
+            color: white;
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 25px;
+        }
+        
+        .module-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 18px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid #667eea;
+        }
+        
+        .module-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .module-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #2d3748;
+            text-transform: capitalize;
+        }
+        
+        .module-status {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        
+        .status-no-issues {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+        }
+        
+        .status-detected {
+            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+            color: white;
+        }
+        
+        .issue-list { list-style: none; }
+        
+        .issue-item {
+            background: #f7fafc;
+            padding: 18px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid #ed8936;
+        }
+        
+        .issue-text { color: #2d3748; font-size: 14px; font-weight: 500; flex: 1; }
+        .issue-actions { display: flex; gap: 10px; }
+        
+        .btn-small {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-fix {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+        }
+        
+        .btn-escalate {
+            background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+            color: white;
+        }
+        
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
         .hidden { display: none; }
-        .spinner { border: 3px solid #f3f3f3; border-top: 3px solid #667eea; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🛠️ Self-Healing Agent Dashboard</h1>
-            <p>Platform: {{ platform }} | Admin: {{ is_admin }}</p>
+            <div class="header-left">
+                <div class="logo">🛠️</div>
+                <div class="header-title">
+                    <h1>Self-Healing Agent</h1>
+                    <p>IT Administrator Control Panel</p>
+                </div>
+            </div>
+            <div class="header-info">
+                <span class="badge badge-platform">💻 {{ platform }}</span>
+                {% if is_admin %}
+                <span class="badge badge-admin">✓ Admin</span>
+                {% else %}
+                <span class="badge badge-no-admin">⚠ No Admin</span>
+                {% endif %}
+            </div>
         </div>
-        <div class="controls">
-            <h2>Control Panel</h2>
-            <button class="btn btn-primary" onclick="startScan(['network', 'disk', 'service', 'printer'])">🔍 Run Full Scan</button>
-            <button class="btn btn-primary" onclick="startScan(['network'])">🌐 Network</button>
-            <button class="btn btn-primary" onclick="startScan(['disk'])">💾 Disk</button>
-            <button class="btn btn-primary" onclick="startScan(['service'])">⚙️ Services</button>
-            <button class="btn btn-primary" onclick="startScan(['printer'])">🖨️ Printer</button>
+        
+        <div class="controls glass-card">
+            <h2>🔍 Quick Scan</h2>
+            <div class="button-grid">
+                <button class="scan-button" onclick="startScan(['network', 'disk', 'service', 'printer'])">
+                    <span class="button-icon">🎯</span>
+                    <div class="button-title">Full Scan</div>
+                    <div class="button-subtitle">All modules</div>
+                </button>
+                <button class="scan-button" onclick="startScan(['network'])">
+                    <span class="button-icon">🌐</span>
+                    <div class="button-title">Network</div>
+                    <div class="button-subtitle">Connectivity</div>
+                </button>
+                <button class="scan-button" onclick="startScan(['disk'])">
+                    <span class="button-icon">💾</span>
+                    <div class="button-title">Disk Space</div>
+                    <div class="button-subtitle">Storage</div>
+                </button>
+                <button class="scan-button" onclick="startScan(['service'])">
+                    <span class="button-icon">⚙️</span>
+                    <div class="button-title">Services</div>
+                    <div class="button-subtitle">System</div>
+                </button>
+                <button class="scan-button" onclick="startScan(['printer'])">
+                    <span class="button-icon">🖨️</span>
+                    <div class="button-title">Printer</div>
+                    <div class="button-subtitle">Print services</div>
+                </button>
+            </div>
         </div>
-        <div class="status-bar">
-            <h3>Status</h3>
-            <div id="status">Ready to scan</div>
+        
+        <div class="status-bar glass-card">
+            <h3>📊 Status</h3>
+            <div class="status-content">
+                <span id="status">Ready to scan</span>
+            </div>
         </div>
+        
         <div id="summary" class="summary hidden">
-            <div class="summary-card"><h3>Modules</h3><div class="value" id="total-modules">0</div></div>
-            <div class="summary-card"><h3>Issues</h3><div class="value" id="issues-found">0</div></div>
-            <div class="summary-card"><h3>Healthy</h3><div class="value" id="no-issues">0</div></div>
-            <div class="summary-card"><h3>Errors</h3><div class="value" id="errors">0</div></div>
+            <div class="summary-card">
+                <h3>Modules</h3>
+                <div class="value" id="total-modules">0</div>
+            </div>
+            <div class="summary-card danger">
+                <h3>Issues</h3>
+                <div class="value" id="issues-found">0</div>
+            </div>
+            <div class="summary-card success">
+                <h3>Healthy</h3>
+                <div class="value" id="no-issues">0</div>
+            </div>
+            <div class="summary-card warning">
+                <h3>Errors</h3>
+                <div class="value" id="errors">0</div>
+            </div>
         </div>
-        <div id="results" class="results hidden">
-            <h2>Results</h2>
+        
+        <div id="results" class="results glass-card hidden">
+            <h2>📋 Results</h2>
             <div id="results-content"></div>
         </div>
     </div>
+
     <script>
         let scanInterval = null;
+        
         function startScan(modules) {
             document.getElementById('status').innerHTML = '<span class="spinner"></span>Scanning...';
             document.getElementById('summary').classList.add('hidden');
             document.getElementById('results').classList.add('hidden');
-            fetch('/api/scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ modules: modules }) })
+            
+            fetch('/api/scan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ modules: modules })
+            })
             .then(response => response.json())
-            .then(data => { scanInterval = setInterval(checkResults, 2000); });
-        }
-        function checkResults() {
-            fetch('/api/status').then(response => response.json()).then(data => {
-                if (!data.scan_in_progress && data.has_results) { clearInterval(scanInterval); loadResults(); }
+            .then(data => {
+                scanInterval = setInterval(checkResults, 2000);
+            })
+            .catch(error => {
+                document.getElementById('status').textContent = 'Error: ' + error;
             });
         }
-        function loadResults() {
-            fetch('/api/results').then(response => response.json()).then(data => displayResults(data));
+        
+        function checkResults() {
+            fetch('/api/status')
+            .then(response => response.json())
+            .then(data => {
+                if (!data.scan_in_progress && data.has_results) {
+                    clearInterval(scanInterval);
+                    loadResults();
+                }
+            });
         }
+        
+        function loadResults() {
+            fetch('/api/results')
+            .then(response => response.json())
+            .then(data => displayResults(data));
+        }
+        
         function displayResults(data) {
             document.getElementById('status').textContent = 'Completed: ' + new Date(data.timestamp).toLocaleString();
             document.getElementById('total-modules').textContent = data.summary.total_modules;
@@ -81,39 +454,58 @@
             document.getElementById('no-issues').textContent = data.summary.no_issues;
             document.getElementById('errors').textContent = data.summary.errors;
             document.getElementById('summary').classList.remove('hidden');
+            
             let html = '';
             data.results.forEach((result) => {
                 const issues = result.detection?.issues || [];
-                html += '<div class="module-card"><h3>' + result.module + ' - ' + result.status + '</h3>';
+                const hasIssues = result.detection?.has_issues || false;
+                let statusClass = hasIssues ? 'status-detected' : 'status-no-issues';
+                let statusText = hasIssues ? issues.length + ' Issue(s)' : 'No Issues';
+                
+                html += '<div class="module-card"><div class="module-header">';
+                html += '<div class="module-name">' + result.module + '</div>';
+                html += '<div class="module-status ' + statusClass + '">' + statusText + '</div></div>';
+                
                 if (issues.length > 0) {
+                    html += '<ul class="issue-list">';
                     issues.forEach((issue, idx) => {
-                        html += '<div class="issue-item"><span>' + issue + '</span><div>';
-                        html += '<button class="btn btn-success btn-small" onclick="fixIssue(\'' + result.module + '\',' + idx + ')">Fix</button>';
-                        html += '<button class="btn btn-warning btn-small" onclick="escalate(\'' + result.module + '\',\'' + issue + '\')">Escalate</button>';
-                        html += '</div></div>';
+                        html += '<li class="issue-item"><span class="issue-text">' + issue + '</span>';
+                        html += '<div class="issue-actions">';
+                        html += '<button class="btn-small btn-fix" onclick="fixIssue(\'' + result.module + '\',' + idx + ')">Fix</button>';
+                        html += '<button class="btn-small btn-escalate" onclick="escalateIssue(\'' + result.module + '\',\'' + issue.replace(/'/g, "\\'") + '\')">Escalate</button>';
+                        html += '</div></li>';
                     });
+                    html += '</ul>';
                 }
                 html += '</div>';
             });
+            
             document.getElementById('results-content').innerHTML = html;
             document.getElementById('results').classList.remove('hidden');
         }
+        
         function fixIssue(module, idx) {
-            if (confirm('Fix this issue?')) {
-                fetch('/api/fix/' + module + '/' + idx, { method: 'POST' })
-                .then(response => response.json())
-                .then(data => { alert(data.message); setTimeout(() => startScan([module]), 3000); });
-            }
+            if (!confirm('Fix this issue?')) return;
+            document.getElementById('status').innerHTML = '<span class="spinner"></span>Fixing...';
+            fetch('/api/fix/' + module + '/' + idx, { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message || 'Fix initiated');
+                setTimeout(() => startScan([module]), 3000);
+            });
         }
-        function escalate(module, issue) {
+        
+        function escalateIssue(module, issue) {
             const notes = prompt('Notes for Tier 2:');
-            if (notes) {
-                fetch('/api/escalate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ module: module, issue: issue, notes: notes }) })
-                .then(response => response.json())
-                .then(data => alert(data.message));
-            }
+            if (!notes) return;
+            fetch('/api/escalate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ module: module, issue: issue, notes: notes })
+            })
+            .then(response => response.json())
+            .then(data => alert(data.message));
         }
     </script>
 </body>
 </html>
-<!-- Reload: 20260115101333 -->
