@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Self-Healing Agent - IT Admin Dashboard
-Web-based control panel for IT administrators
+Self-Healing Agent - Unified Dashboard
+Combined Flask backend + React frontend application
 """
 
 import sys
@@ -10,7 +10,16 @@ import json
 import threading
 from datetime import datetime
 from pathlib import Path
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, send_from_directory, send_file
+
+# Try to import CORS, but don't fail if not available
+try:
+    from flask_cors import CORS
+    CORS_AVAILABLE = True
+except ImportError:
+    CORS_AVAILABLE = False
+    print("⚠️  flask-cors not installed. CORS will not be enabled.")
+    print("   Install with: pip install flask-cors")
 
 # Add parent directories to path
 sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
@@ -24,7 +33,9 @@ from event_log_analyzer import EventLogAnalyzer
 from security_compliance import SecurityCompliance
 from public_status import PublicStatusProvider
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='../../build/static', template_folder='../../build')
+if CORS_AVAILABLE:
+    CORS(app)  # Enable CORS for React development
 app.config['SECRET_KEY'] = 'self-healing-agent-secret-key-change-in-production'
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
@@ -70,29 +81,49 @@ def run_agent_scan(modules=None):
 
 @app.route('/')
 def index():
-    """Main dashboard page"""
+    """Serve React app"""
+    return send_file('../../build/index.html')
+
+@app.route('/<path:path>')
+def serve_react_app(path):
+    """Serve React app for all non-API routes"""
+    if path.startswith('api/'):
+        return jsonify({'error': 'API endpoint not found'}), 404
+    
+    # Check if it's a static file
+    static_file_path = Path(__file__).parent.parent.parent / 'build' / path
+    if static_file_path.exists() and static_file_path.is_file():
+        return send_from_directory('../../build', path)
+    
+    # Otherwise serve the React app
+    return send_file('../../build/index.html')
+
+# Legacy Flask template routes (keep for backward compatibility)
+@app.route('/legacy')
+def legacy_index():
+    """Legacy Flask dashboard page"""
     return render_template('dashboard.html', 
                          platform=str(platform_detector),
                          is_admin=platform_detector.is_admin())
 
-@app.route('/monitoring')
-def monitoring():
-    """System monitoring page"""
+@app.route('/legacy/monitoring')
+def legacy_monitoring():
+    """Legacy system monitoring page"""
     return render_template('monitoring.html')
 
-@app.route('/status')
-def public_status():
-    """Public status page for citizens"""
+@app.route('/legacy/status')
+def legacy_public_status():
+    """Legacy public status page for citizens"""
     return render_template('public_status.html')
 
-@app.route('/public')
-def public_simple():
-    """Simple public status page"""
+@app.route('/legacy/public')
+def legacy_public_simple():
+    """Legacy simple public status page"""
     return render_template('public_simple.html')
 
-@app.route('/test')
-def test_status():
-    """Test page for debugging"""
+@app.route('/legacy/test')
+def legacy_test_status():
+    """Legacy test page for debugging"""
     return render_template('test_status.html')
 
 @app.route('/api/status')
@@ -333,16 +364,30 @@ def search_public_services():
         return jsonify({'error': str(e)}), 500
 
 def main():
-    """Start the dashboard server"""
+    """Start the unified dashboard server"""
     print("="*60)
-    print("Self-Healing Agent - IT Admin Dashboard")
+    print("ServicePulse - Unified Application Server")
     print("="*60)
     print(f"Platform: {platform_detector}")
     print(f"Admin Privileges: {platform_detector.is_admin()}")
     print("")
-    print("Starting web server...")
-    print("Dashboard URL: http://localhost:5000")
+    print("🚀 Starting unified Flask + React server...")
     print("")
+    print("📱 React Frontend: http://localhost:5000")
+    print("🔧 Admin Dashboard: http://localhost:5000/admin")
+    print("🌐 Public Status: http://localhost:5000/status")
+    print("📊 API Endpoints: http://localhost:5000/api/*")
+    print("🔄 Legacy Templates: http://localhost:5000/legacy/*")
+    print("")
+    
+    # Check if React build exists
+    build_path = Path(__file__).parent.parent.parent / 'build'
+    if not build_path.exists():
+        print("⚠️  React build not found!")
+        print("   Run: python build-and-run.py")
+        print("   Or: npm run build")
+        print("")
+    
     print("Press Ctrl+C to stop")
     print("="*60)
     

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Firebase Connection Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    button {
+      background-color: #3b82f6;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background-color: #2563eb;
+    }
+    #result {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 5px;
+      font-size: 16px;
+      min-height: 30px;
+    }
+    .success {
+      background-color: #d1fae5;
+      color: #065f46;
+      border: 1px solid #6ee7b7;
+    }
+    .error {
+      background-color: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fca5a5;
+    }
+  </style>
+</head>
+<body>
+  <h2>Test Firebase Connection</h2>
+  <p>Click the button below to test Firestore connectivity:</p>
+  <button onclick="testFirestore()">Test Firestore</button>
+  <div id="result"></div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js';
+    import { getFirestore, collection, addDoc } from 'https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCFZm38Xit10p-uPAuUz-jrETcLtflqEMA",
+      authDomain: "servicepulse-prod.firebaseapp.com",
+      projectId: "servicepulse-prod",
+      storageBucket: "servicepulse-prod.firebasestorage.app",
+      messagingSenderId: "314577246152",
+      appId: "1:314577246152:web:b13a4b8dcf2216616e92fd"
+    };
+
+    window.testFirestore = async function() {
+      const resultDiv = document.getElementById('result');
+      resultDiv.innerHTML = '⏳ Testing connection...';
+      
+      try {
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        const docRef = await addDoc(collection(db, "test"), {
+          message: "Firestore connection successful!",
+          timestamp: new Date(),
+          testEnvironment: "production"
+        });
+        
+        resultDiv.className = 'success';
+        resultDiv.innerHTML = `✅ <strong>Connected!</strong><br>Document ID: <code>${docRef.id}</code><br>Firebase project: servicepulse-prod`;
+      } catch (error) {
+        resultDiv.className = 'error';
+        resultDiv.innerHTML = `❌ <strong>Error:</strong> ${error.message}`;
+        console.error('Firebase error:', error);
+      }
+    };
+  </script>
+</body>
+</html>
