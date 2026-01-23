@@ -134,34 +134,85 @@ class PublicStatusProvider:
             'operational': service['operational']
         }
     
+    def get_windows_update_status(self) -> Dict[str, Any]:
+        """Get Windows Update service status"""
+        service = self.get_service_status('wuauserv')
+        return {
+            'name': 'Windows Updates',
+            'status': 'Service running' if service['operational'] else 'Service stopped',
+            'type': 'System',
+            'operational': service['operational']
+        }
+    
+    def get_firewall_status(self) -> Dict[str, Any]:
+        """Get Windows Firewall status"""
+        try:
+            ps_cmd = """
+            Get-NetFirewallProfile | Where-Object {$_.Enabled -eq $true} | 
+            Select-Object Name, Enabled | ConvertTo-Json
+            """
+            
+            result = subprocess.run(['powershell', '-Command', ps_cmd],
+                                  capture_output=True, text=True, timeout=10)
+            
+            if result.stdout:
+                data = json.loads(result.stdout)
+                if isinstance(data, dict):
+                    data = [data]
+                
+                enabled_profiles = len(data) if data else 0
+                operational = enabled_profiles > 0
+                
+                return {
+                    'name': 'Windows Firewall',
+                    'status': f'{enabled_profiles} profile(s) active' if operational else 'Disabled',
+                    'type': 'Security',
+                    'operational': operational
+                }
+        except Exception:
+            pass
+        
+        return {
+            'name': 'Windows Firewall',
+            'status': 'Unable to check',
+            'type': 'Security',
+            'operational': False
+        }
+    
     def get_all_public_status(self) -> Dict[str, Any]:
-        """Get all public-facing service status"""
+        """Get all public-facing service status with real system data"""
         services = []
         
-        # Core services
+        # Core services with real data
         services.append(self.get_network_status())
         services.append(self.get_print_service_status())
         services.append(self.get_file_sharing_status())
         services.append(self.get_dns_status())
         
-        # Disk status
+        # Real disk status
         services.extend(self.get_disk_status())
+        
+        # Add Windows Update service status
+        services.append(self.get_windows_update_status())
+        
+        # Add Firewall status
+        services.append(self.get_firewall_status())
         
         # Calculate overall health
         total = len(services)
         operational = sum(1 for s in services if s.get('operational', False))
         health_pct = (operational / total * 100) if total > 0 else 0
         
-        # Determine status
-        if health_pct >= 90:
+        # Determine status based on user requirement: 50% threshold
+        if health_pct >= 80:
             overall_status = 'operational'
             status_message = 'All Systems Operational'
-        elif health_pct >= 70:
+        elif health_pct > 50:
             overall_status = 'degraded'
-            status_message = 'Some Services Degraded'
+            status_message = 'Some Services Affected'
         else:
             overall_status = 'outage'
-            status_message = 'Service Disruption'
+            status_message = 'System is Down'  # When 50% or more services are down
         
         return {
             'timestamp': datetime.now().isoformat(),

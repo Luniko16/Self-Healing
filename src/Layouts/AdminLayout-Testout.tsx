@@ -75,11 +75,11 @@ const AdminLayout: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
+          className="fixed inset-0 z-40 bg-black bg-opacity-50 md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -88,8 +88,9 @@ const AdminLayout: React.FC = () => {
       <aside className={`
         fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 
         transform transition-transform duration-300 ease-in-out
-        lg:translate-x-0 lg:static lg:inset-auto lg:z-auto
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        md:translate-x-0 md:static md:inset-auto md:z-auto md:w-56
+        lg:w-64 xl:w-72
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
         <div className="flex flex-col h-full">
           {/* Logo */}
@@ -151,7 +152,7 @@ const AdminLayout: React.FC = () => {
       </aside>
 
       {/* Main content */}
-      <div className="lg:pl-64">
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Top header */}
         <header className="sticky top-0 z-40 bg-white border-b border-gray-200">
           <div className="flex items-center justify-between px-6 py-4">
@@ -290,7 +291,17 @@ const AdminLayout: React.FC = () => {
               <div className="h-6 w-px bg-gray-200"></div>
               
               <button 
-                onClick={() => navigate('/')}
+                onClick={() => {
+                  // Clear any stored authentication data
+                  localStorage.removeItem('authToken');
+                  sessionStorage.clear();
+                  
+                  // Navigate to public page
+                  navigate('/');
+                  
+                  // Optional: Show logout confirmation
+                  console.log('User logged out successfully');
+                }}
                 className="flex items-center space-x-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <LogOut className="w-5 h-5" />
@@ -301,7 +312,7 @@ const AdminLayout: React.FC = () => {
         </header>
 
         {/* Page content */}
-        <main className="p-6">
+        <main className="flex-1">
           <Outlet />
         </main>
 

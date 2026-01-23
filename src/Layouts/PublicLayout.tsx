@@ -100,7 +100,7 @@ const PublicLayout: React.FC = () => {
           </div>
 
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>© 2024 ServicePulse. Providing transparency in public services.</p>
+            <p>© 2026 ServicePulse. Created by Ntsika Mtshixa and Karabo Radebe. Providing transparency in public services.</p>
             <p className="text-sm mt-2">For emergencies, call 0800 123 000</p>
           </div>
         </div>

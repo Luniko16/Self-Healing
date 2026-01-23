@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto-Fix Test - ServicePulse</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9fafb;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+        .header p {
+            color: #6b7280;
+        }
+        .issue-card {
+            border: 2px solid #fecaca;
+            background: #fef2f2;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .issue-card.warning {
+            border-color: #fed7aa;
+            background: #fffbeb;
+        }
+        .issue-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .issue-module {
+            background: #dc2626;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .issue-card.warning .issue-module {
+            background: #d97706;
+        }
+        .auto-fixable {
+            background: #059669;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 8px;
+        }
+        .fix-btn {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .fix-btn:hover:not(:disabled) {
+            background: #b91c1c;
+        }
+        .fix-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .fix-btn.warning {
+            background: #d97706;
+        }
+        .fix-btn.warning:hover:not(:disabled) {
+            background: #b45309;
+        }
+        .fix-all-btn {
+            background: #059669;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            transition: all 0.2s;
+        }
+        .fix-all-btn:hover:not(:disabled) {
+            background: #047857;
+        }
+        .fix-all-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .success {
+            background: #d1fae5;
+            border: 2px solid #a7f3d0;
+            color: #065f46;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        .error {
+            background: #fee2e2;
+            border: 2px solid #fecaca;
+            color: #991b1b;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        .refresh-btn {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            margin-left: 12px;
+        }
+        .refresh-btn:hover:not(:disabled) {
+            background: #1d4ed8;
+        }
+        .no-issues {
+            text-align: center;
+            padding: 40px;
+            color: #059669;
+        }
+        .no-issues h3 {
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔧 ServicePulse Auto-Fix Test</h1>
+        <p>Real-time system diagnostics with automated issue resolution</p>
+    </div>
+
+    <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2>System Diagnostics</h2>
+            <div>
+                <button id="fixAllBtn" class="fix-all-btn" onclick="fixAllIssues()" style="display: none;">
+                    Auto-Fix All Issues
+                </button>
+                <button id="refreshBtn" class="refresh-btn" onclick="loadDiagnostics()">
+                    🔄 Refresh Scan
+                </button>
+            </div>
+        </div>
+        
+        <div id="diagnosticsContainer">
+            <p>Loading diagnostics...</p>
+        </div>
+    </div>
+
+    <script>
+        let currentDiagnostics = null;
+        let fixingIssues = new Set();
+
+        async function loadDiagnostics() {
+            const container = document.getElementById('diagnosticsContainer');
+            const refreshBtn = document.getElementById('refreshBtn');
+            
+            refreshBtn.disabled = true;
+            refreshBtn.innerHTML = '<span class="loading"></span>Scanning...';
+            
+            try {
+                const response = await fetch('/api/diagnostics/real-issues');
+                const data = await response.json();
+                currentDiagnostics = data;
+                
+                displayDiagnostics(data);
+            } catch (error) {
+                container.innerHTML = `<div class="error">Error loading diagnostics: ${error.message}</div>`;
+            } finally {
+                refreshBtn.disabled = false;
+                refreshBtn.innerHTML = '🔄 Refresh Scan';
+            }
+        }
+
+        function displayDiagnostics(data) {
+            const container = document.getElementById('diagnosticsContainer');
+            const fixAllBtn = document.getElementById('fixAllBtn');
+            
+            if (!data.issues || data.issues.length === 0) {
+                container.innerHTML = `
+                    <div class="no-issues">
+                        <h3>✅ System Health Excellent</h3>
+                        <p>No issues detected in the latest diagnostic scan.</p>
+                    </div>
+                `;
+                fixAllBtn.style.display = 'none';
+                return;
+            }
+
+            const autoFixableCount = data.issues.filter(issue => issue.auto_fixable).length;
+            if (autoFixableCount > 0) {
+                fixAllBtn.style.display = 'inline-block';
+                fixAllBtn.innerHTML = `Auto-Fix All (${autoFixableCount} issues)`;
+            } else {
+                fixAllBtn.style.display = 'none';
+            }
+
+            let html = `
+                <div style="margin-bottom: 20px;">
+                    <h3>System: ${data.hostname}</h3>
+                    <p><strong>Health Status:</strong> <span style="color: ${data.system_health === 'critical' ? '#dc2626' : data.system_health === 'warning' ? '#d97706' : '#059669'}; text-transform: capitalize;">${data.system_health}</span></p>
+                    <p><strong>Total Issues:</strong> ${data.summary?.total_issues || 0} (${data.summary?.critical_issues || 0} critical, ${data.summary?.warnings || 0} warnings)</p>
+                    <p><strong>Last Scan:</strong> ${new Date(data.timestamp).toLocaleString()}</p>
+                </div>
+            `;
+
+            // Critical Issues
+            if (data.critical_issues && data.critical_issues.length > 0) {
+                html += '<h4 style="color: #dc2626; margin-bottom: 12px;">🚨 Critical Issues</h4>';
+                data.critical_issues.forEach((issue, index) => {
+                    const issueKey = `${issue.module}_${issue.timestamp}`;
+                    const isFixing = fixingIssues.has(issueKey);
+                    
+                    html += `
+                        <div class="issue-card">
+                            <div class="issue-header">
+                                <div>
+                                    <span class="issue-module">${issue.module}</span>
+                                    ${issue.auto_fixable ? '<span class="auto-fixable">Auto-Fixable</span>' : ''}
+                                </div>
+                                ${issue.auto_fixable ? `
+                                    <button class="fix-btn" onclick="fixIssue('${issue.module}', '${encodeURIComponent(issue.description)}', ${JSON.stringify(issue.details || {}).replace(/"/g, '&quot;')}, '${issueKey}')" ${isFixing ? 'disabled' : ''}>
+                                        ${isFixing ? '<span class="loading"></span>Fixing...' : '🔧 Fix Now'}
+                                    </button>
+                                ` : ''}
+                            </div>
+                            <p><strong>${issue.description}</strong></p>
+                            ${issue.details ? `<p style="font-size: 12px; color: #6b7280;">Details: ${Object.entries(issue.details).map(([k,v]) => `${k}: ${v}`).join(', ')}</p>` : ''}
+                        </div>
+                    `;
+                });
+            }
+
+            // Warnings
+            if (data.warnings && data.warnings.length > 0) {
+                html += '<h4 style="color: #d97706; margin-bottom: 12px; margin-top: 24px;">⚠️ Warnings</h4>';
+                data.warnings.forEach((issue, index) => {
+                    const issueKey = `${issue.module}_${issue.timestamp}`;
+                    const isFixing = fixingIssues.has(issueKey);
+                    
+                    html += `
+                        <div class="issue-card warning">
+                            <div class="issue-header">
+                                <div>
+                                    <span class="issue-module">${issue.module}</span>
+                                    ${issue.auto_fixable ? '<span class="auto-fixable">Auto-Fixable</span>' : ''}
+                                </div>
+                                ${issue.auto_fixable ? `
+                                    <button class="fix-btn warning" onclick="fixIssue('${issue.module}', '${encodeURIComponent(issue.description)}', ${JSON.stringify(issue.details || {}).replace(/"/g, '&quot;')}, '${issueKey}')" ${isFixing ? 'disabled' : ''}>
+                                        ${isFixing ? '<span class="loading"></span>Fixing...' : '🔧 Fix'}
+                                    </button>
+                                ` : ''}
+                            </div>
+                            <p>${issue.description}</p>
+                            ${issue.details ? `<p style="font-size: 12px; color: #6b7280;">Details: ${Object.entries(issue.details).map(([k,v]) => `${k}: ${v}`).join(', ')}</p>` : ''}
+                        </div>
+                    `;
+                });
+            }
+
+            container.innerHTML = html;
+        }
+
+        async function fixIssue(module, description, details, issueKey) {
+            fixingIssues.add(issueKey);
+            
+            try {
+                const response = await fetch('/api/diagnostics/auto-fix', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        module: module,
+                        description: decodeURIComponent(description),
+                        details: details
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showMessage(`✅ ${module} issue fixed! Actions: ${result.actions_taken.join(', ')}`, 'success');
+                    setTimeout(() => loadDiagnostics(), 2000);
+                } else {
+                    showMessage(`❌ Fix failed: ${result.message}. Errors: ${result.errors.join(', ')}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`❌ Fix failed: ${error.message}`, 'error');
+            } finally {
+                fixingIssues.delete(issueKey);
+            }
+        }
+
+        async function fixAllIssues() {
+            if (!currentDiagnostics) return;
+
+            const autoFixableIssues = [
+                ...(currentDiagnostics.critical_issues || []),
+                ...(currentDiagnostics.warnings || [])
+            ].filter(issue => issue.auto_fixable);
+
+            if (autoFixableIssues.length === 0) {
+                showMessage('No auto-fixable issues found', 'error');
+                return;
+            }
+
+            const confirmed = confirm(`Auto-fix ${autoFixableIssues.length} issues?\\n\\nThis may take several minutes and will perform system-level changes.`);
+            if (!confirmed) return;
+
+            const fixAllBtn = document.getElementById('fixAllBtn');
+            fixAllBtn.disabled = true;
+            fixAllBtn.innerHTML = '<span class="loading"></span>Fixing All Issues...';
+
+            let successCount = 0;
+            let failCount = 0;
+
+            for (const issue of autoFixableIssues) {
+                try {
+                    const response = await fetch('/api/diagnostics/auto-fix', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            module: issue.module,
+                            description: issue.description,
+                            details: issue.details || {}
+                        })
+                    });
+
+                    const result = await response.json();
+                    if (result.success) {
+                        successCount++;
+                    } else {
+                        failCount++;
+                    }
+                } catch (error) {
+                    failCount++;
+                }
+            }
+
+            if (successCount > 0 && failCount === 0) {
+                showMessage(`✅ All ${successCount} issues fixed successfully!`, 'success');
+            } else if (successCount > 0) {
+                showMessage(`⚠️ ${successCount} issues fixed, ${failCount} failed`, 'error');
+            } else {
+                showMessage(`❌ All ${failCount} auto-fix attempts failed`, 'error');
+            }
+
+            fixAllBtn.disabled = false;
+            setTimeout(() => loadDiagnostics(), 3000);
+        }
+
+        function showMessage(message, type) {
+            const container = document.getElementById('diagnosticsContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = type;
+            messageDiv.innerHTML = message;
+            container.insertBefore(messageDiv, container.firstChild);
+            
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 8000);
+        }
+
+        // Load diagnostics on page load
+        loadDiagnostics();
+        
+        // Auto-refresh every 30 seconds
+        setInterval(loadDiagnostics, 30000);
+    </script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import AdminLayout from './Layouts/AdminLayout';
 import PublicLayout from './Layouts/PublicLayout';
@@ -12,8 +12,54 @@ import Alerts from './pages/admin/Alerts';
 import PublicStatus from './pages/public/PublicStatus';
 import LocationSearch from './pages/public/LocationSearch';
 import ServiceDetails from './pages/public/ServiceDetails';
+import LoadingScreen from './components/shared/LoadingScreen';
 
 function App() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadingMessage, setLoadingMessage] = useState('Initializing ServicePulse...');
+
+  useEffect(() => {
+    const initializeApp = async () => {
+      try {
+        // Simulate app initialization steps
+        setLoadingMessage('Connecting to backend services...');
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
+        setLoadingMessage('Loading system configuration...');
+        await new Promise(resolve => setTimeout(resolve, 600));
+        
+        setLoadingMessage('Preparing dashboard...');
+        await new Promise(resolve => setTimeout(resolve, 400));
+        
+        // Check if backend is available
+        try {
+          const response = await fetch('/api/status');
+          if (response.ok) {
+            setLoadingMessage('Backend connected successfully!');
+          } else {
+            setLoadingMessage('Backend unavailable - using offline mode');
+          }
+        } catch (error) {
+          setLoadingMessage('Backend unavailable - using offline mode');
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+      } catch (error) {
+        console.error('App initialization error:', error);
+        setLoadingMessage('Initialization complete');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeApp();
+  }, []);
+
+  if (isLoading) {
+    return <LoadingScreen message={loadingMessage} />;
+  }
+
   return (
     <Router>
       <Routes>
@@ -27,6 +73,7 @@ function App() {
           <Route path="analytics" element={<Analytics />} />
           <Route path="settings" element={<Settings />} />
           <Route path="alerts" element={<Alerts />} />
+          <Route path="notifications" element={<Alerts />} />
         </Route>
 
         {/* Public Routes */}

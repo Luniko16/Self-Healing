@@ -1,32 +1,43 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { 
-  Activity, 
+  Server, 
   Wifi, 
   Printer, 
   HardDrive, 
   AlertTriangle,
   CheckCircle,
   XCircle,
-  TrendingUp,
+  PlusCircle,
+  RefreshCw,
+  BarChart3,
   Users,
-  Clock,
-  RefreshCw
+  Globe,
+  Info,
+  MapPin,
+  Tag,
+  Clock
 } from 'lucide-react';
+import { Toaster, toast } from 'react-hot-toast';
 import { firebaseService } from '../../services/firebase';
 import { DeviceData } from '../../types';
+import DeviceCard from '../../components/DeviceCard';
+import HealthChart from '../../components/HealthChart';
+import StatusBadge from '../../components/StatusBadge';
+import AddDeviceModal from '../../components/AddDeviceModal';
 
 const Dashboard: React.FC = () => {
   const [devices, setDevices] = useState<DeviceData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = firebaseService.subscribeToAllDevices((devicesData) => {
+    const unsubscribe = firebaseService.subscribeToAllDevices((devicesData: DeviceData[]) => {
       setDevices(devicesData);
       setLoading(false);
       if (refreshing) {
         setRefreshing(false);
+        toast.success('Devices refreshed');
       }
     });
 
@@ -34,376 +45,344 @@ const Dashboard: React.FC = () => {
   }, [refreshing]);
 
   const stats = firebaseService.getHealthStats(devices);
-  const recentDevices = devices.slice(0, 5);
+
+  const handleDeleteDevice = async (deviceId: string) => {
+    if (window.confirm(`Are you sure you want to delete device ${deviceId}?`)) {
+      await firebaseService.deleteDevice(deviceId);
+    }
+  };
 
   const handleRefresh = () => {
     setRefreshing(true);
   };
 
+  const quickAddDevice = (name: string, status: DeviceData['status']['Status']) => {
+    firebaseService.simulateDevice(name, status);
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <RefreshCw className="w-12 h-12 text-blue-500 animate-spin mx-auto" />
-          <p className="mt-4 text-gray-600">Loading dashboard data...</p>
+          <div className="relative">
+            <RefreshCw className="w-16 h-16 text-blue-500 animate-spin mx-auto" />
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-blue-600 blur-xl opacity-20 animate-pulse rounded-full"></div>
+          </div>
+          <h3 className="mt-6 text-xl font-semibold text-gray-700">Loading ServicePulse Dashboard</h3>
+          <p className="mt-2 text-gray-500">Connecting to Firebase and loading devices...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-gray-50">
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          className: 'toast',
+          duration: 4000,
+        }}
+      />
+
+      <AddDeviceModal 
+        isOpen={isAddModalOpen} 
+        onClose={() => setIsAddModalOpen(false)} 
+      />
+
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
-          <p className="text-gray-600">Real-time monitoring of {stats.total} service locations</p>
-          <div className="flex items-center gap-4 text-sm text-gray-600 mt-2">
-            <span className="flex items-center gap-1">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              {stats.agents} Live Agents
-            </span>
-            <span className="flex items-center gap-1">
-              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-              {stats.locations} Public Services
-            </span>
-          </div>
-        </div>
-        
-        <div className="flex items-center space-x-4">
-          <div className="text-sm text-gray-500">
-            Last updated: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </div>
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-            <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border p-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-gray-500 font-medium">Total Locations</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">{stats.total}</p>
-              <p className="text-xs text-gray-600 mt-2">+2 this week</p>
-            </div>
-            <div className="p-3 bg-blue-50 rounded-lg">
-              <Activity className="w-6 h-6 text-blue-600" />
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-xl shadow-sm border p-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-gray-500 font-medium">Operational</p>
-              <p className="text-3xl font-bold text-green-600 mt-2">{stats.healthy}</p>
-              <p className="text-xs text-gray-600 mt-2">{stats.total > 0 ? Math.round((stats.healthy / stats.total) * 100) : 0}% healthy</p>
-            </div>
-            <div className="p-3 bg-green-50 rounded-lg">
-              <CheckCircle className="w-6 h-6 text-green-600" />
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-xl shadow-sm border p-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-gray-500 font-medium">Limited Services</p>
-              <p className="text-3xl font-bold text-yellow-600 mt-2">{stats.limited}</p>
-              <p className="text-xs text-gray-600 mt-2">Needs attention</p>
-            </div>
-            <div className="p-3 bg-yellow-50 rounded-lg">
-              <AlertTriangle className="w-6 h-6 text-yellow-600" />
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-xl shadow-sm border p-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-gray-500 font-medium">Critical</p>
-              <p className="text-3xl font-bold text-red-600 mt-2">{stats.critical}</p>
-              <p className="text-xs text-gray-600 mt-2">Immediate action required</p>
-            </div>
-            <div className="p-3 bg-red-50 rounded-lg">
-              <XCircle className="w-6 h-6 text-red-600" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Charts and Recent Devices */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl shadow-sm border p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-gray-900">Service Health Overview</h2>
-              <Link to="/admin/analytics" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-                View details →
-              </Link>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-900">Network Status</span>
-                  <span className="text-sm font-bold text-blue-600">
-                    {Math.round(
-                      (devices.filter(d => d.checks.network.PingSuccess).length / (devices.length || 1)) * 100
-                    )}%
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="h-2 rounded-full bg-blue-500 transition-all"
-                    style={{
-                      width: `${Math.round(
-                        (devices.filter(d => d.checks.network.PingSuccess).length / (devices.length || 1)) * 100
-                      )}%`
-                    }}
-                  ></div>
-                </div>
+      <header className="bg-white shadow-sm border-b">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl">
+                <Server className="w-8 h-8 text-white" />
               </div>
               <div>
-                <div className="flex justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-900">Printer Services</span>
-                  <span className="text-sm font-bold text-purple-600">
-                    {Math.round(
-                      (devices.filter(d => d.checks.printer.ServiceRunning).length / (devices.length || 1)) * 100
-                    )}%
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="h-2 rounded-full bg-purple-500 transition-all"
-                    style={{
-                      width: `${Math.round(
-                        (devices.filter(d => d.checks.printer.ServiceRunning).length / (devices.length || 1)) * 100
-                      )}%`
-                    }}
-                  ></div>
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-900">Disk Space Healthy</span>
-                  <span className="text-sm font-bold text-green-600">
-                    {Math.round(
-                      (devices.filter(d => d.checks.disk.PercentFree > 10).length / (devices.length || 1)) * 100
-                    )}%
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="h-2 rounded-full bg-green-500 transition-all"
-                    style={{
-                      width: `${Math.round(
-                        (devices.filter(d => d.checks.disk.PercentFree > 10).length / (devices.length || 1)) * 100
-                      )}%`
-                    }}
-                  ></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          <div className="bg-white rounded-xl shadow-sm border p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">System Health</h2>
-            <div className="space-y-3">
-              <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                <p className="text-sm font-medium text-green-900">Overall Status</p>
-                <p className="text-2xl font-bold text-green-600 mt-1">
-                  {stats.critical === 0 ? 'Healthy' : 'Warning'}
+                <h1 className="text-3xl font-bold text-gray-900">ServicePulse Dashboard</h1>
+                <p className="text-gray-600 mt-1">
+                  Real-time monitoring of {stats.total} Windows device{stats.total !== 1 ? 's' : ''}
                 </p>
               </div>
-              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <p className="text-sm font-medium text-blue-900">Operational Rate</p>
-                <p className="text-2xl font-bold text-blue-600 mt-1">
-                  {stats.total > 0 ? Math.round((stats.healthy / stats.total) * 100) : 0}%
+            </div>
+            
+            <div className="flex items-center gap-4">
+              <div className="hidden lg:block">
+                <StatusBadge status={stats.overall} size="lg" />
+              </div>
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="btn-secondary flex items-center gap-2"
+              >
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                {refreshing ? 'Refreshing...' : 'Refresh'}
+              </button>
+              <button
+                onClick={() => setIsAddModalOpen(true)}
+                className="btn-primary flex items-center gap-2"
+              >
+                <PlusCircle className="w-5 h-5" />
+                Add Device
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-4 py-8">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="card bg-gradient-to-br from-blue-50 to-blue-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-600 font-medium">Total Devices</p>
+                <h3 className="text-4xl font-bold text-gray-900 mt-2">{stats.total}</h3>
+              </div>
+              <div className="p-3 bg-white rounded-lg">
+                <Users className="w-8 h-8 text-blue-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="card bg-gradient-to-br from-green-50 to-green-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-green-600 font-medium">Healthy</p>
+                <h3 className="text-4xl font-bold text-gray-900 mt-2">{stats.healthy}</h3>
+              </div>
+              <div className="p-3 bg-white rounded-lg">
+                <CheckCircle className="w-8 h-8 text-green-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="card bg-gradient-to-br from-yellow-50 to-yellow-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-yellow-600 font-medium">Limited</p>
+                <h3 className="text-4xl font-bold text-gray-900 mt-2">{stats.limited}</h3>
+              </div>
+              <div className="p-3 bg-white rounded-lg">
+                <AlertTriangle className="w-8 h-8 text-yellow-600" />
+              </div>
+            </div>
+          </div>
+
+          <div className="card bg-gradient-to-br from-red-50 to-red-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-red-600 font-medium">Critical</p>
+                <h3 className="text-4xl font-bold text-gray-900 mt-2">{stats.critical}</h3>
+              </div>
+              <div className="p-3 bg-white rounded-lg">
+                <XCircle className="w-8 h-8 text-red-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Charts & Quick Actions */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+          {/* Chart Section */}
+          <div className="lg:col-span-2">
+            <div className="card">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-purple-50 rounded-lg">
+                    <BarChart3 className="w-6 h-6 text-purple-600" />
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-900">Health Distribution</h2>
+                </div>
+                <span className="text-sm text-gray-500">{stats.total} total devices</span>
+              </div>
+              <HealthChart devices={devices} />
+            </div>
+          </div>
+
+          {/* Quick Actions & System Status */}
+          <div className="space-y-6">
+            <div className="card">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold text-gray-900">Quick Actions</h3>
+                <Globe className="w-5 h-5 text-gray-400" />
+              </div>
+              <div className="space-y-3">
+                <button
+                  onClick={() => quickAddDevice('CLINIC-PC-01', 'OPEN')}
+                  className="w-full py-3 bg-green-50 text-green-700 rounded-lg border border-green-200 hover:bg-green-100 transition-colors flex items-center justify-center gap-2"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  Add Healthy Clinic PC
+                </button>
+                <button
+                  onClick={() => quickAddDevice('SCHOOL-PC-01', 'LIMITED')}
+                  className="w-full py-3 bg-yellow-50 text-yellow-700 rounded-lg border border-yellow-200 hover:bg-yellow-100 transition-colors flex items-center justify-center gap-2"
+                >
+                  <AlertTriangle className="w-4 h-4" />
+                  Add Limited School PC
+                </button>
+                <button
+                  onClick={() => quickAddDevice('OFFICE-PC-01', 'CLOSED')}
+                  className="w-full py-3 bg-red-50 text-red-700 rounded-lg border border-red-200 hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
+                >
+                  <XCircle className="w-4 h-4" />
+                  Add Critical Office PC
+                </button>
+              </div>
+            </div>
+
+            <div className="card">
+              <h3 className="text-lg font-bold mb-6">System Status</h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-50 rounded-lg">
+                      <Wifi className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <span className="font-medium">Network Online</span>
+                  </div>
+                  <span className="font-bold text-green-600">{stats.online}/{stats.total}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-purple-50 rounded-lg">
+                      <Printer className="w-4 h-4 text-purple-600" />
+                    </div>
+                    <span className="font-medium">Print Services</span>
+                  </div>
+                  <span className={`font-medium ${
+                    stats.critical > 0 ? 'text-red-600' : 
+                    stats.limited > 0 ? 'text-yellow-600' : 'text-green-600'
+                  }`}>
+                    {stats.critical > 0 ? 'Issues Detected' : 
+                     stats.limited > 0 ? 'Partial Issues' : 'All Running'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-indigo-50 rounded-lg">
+                      <HardDrive className="w-4 h-4 text-indigo-600" />
+                    </div>
+                    <span className="font-medium">Storage Health</span>
+                  </div>
+                  <span className={`font-medium ${
+                    stats.critical > 0 ? 'text-red-600' : 
+                    stats.limited > 0 ? 'text-yellow-600' : 'text-green-600'
+                  }`}>
+                    {stats.critical > 0 ? 'Critical' : 
+                     stats.limited > 0 ? 'Warning' : 'Good'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Devices Grid */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Managed Devices</h2>
+              <p className="text-gray-600 mt-1">
+                Real-time status of all connected Windows devices
+              </p>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-500">
+                Updated: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
+          </div>
+
+          {devices.length === 0 ? (
+            <div className="card text-center py-16">
+              <div className="max-w-md mx-auto">
+                <div className="p-4 bg-blue-50 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
+                  <Server className="w-10 h-10 text-blue-500" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">No devices connected yet</h3>
+                <p className="text-gray-600 mb-8">
+                  Start monitoring by adding your first demo device. The dashboard will show real-time health status, network connectivity, and system metrics.
                 </p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <button
+                    onClick={() => quickAddDevice('DEMO-PC-01', 'OPEN')}
+                    className="btn-primary"
+                  >
+                    Add First Device
+                  </button>
+                  <button
+                    onClick={() => setIsAddModalOpen(true)}
+                    className="btn-secondary"
+                  >
+                    Custom Device
+                  </button>
+                </div>
               </div>
-              <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                <p className="text-sm font-medium text-gray-900">Total Monitored</p>
-                <p className="text-2xl font-bold text-gray-600 mt-1">{stats.total}</p>
-              </div>
             </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Quick Actions</h2>
-            </div>
-            <div className="space-y-3">
-              <button
-                onClick={() => firebaseService.simulateDevice('CLINIC-01', 'OPEN')}
-                className="w-full flex items-center justify-between p-3 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg transition-colors"
-              >
-                <div className="flex items-center space-x-3">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                  <span className="font-medium text-green-700">Add Healthy Clinic</span>
-                </div>
-              </button>
-              
-              <button
-                onClick={() => firebaseService.simulateDevice('SCHOOL-01', 'LIMITED')}
-                className="w-full flex items-center justify-between p-3 bg-yellow-50 hover:bg-yellow-100 border border-yellow-200 rounded-lg transition-colors"
-              >
-                <div className="flex items-center space-x-3">
-                  <AlertTriangle className="w-5 h-5 text-yellow-600" />
-                  <span className="font-medium text-yellow-700">Add Limited School</span>
-                </div>
-              </button>
-              
-              <Link
-                to="/admin/map"
-                className="w-full flex items-center justify-between p-3 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
-              >
-                <div className="flex items-center space-x-3">
-                  <Activity className="w-5 h-5 text-blue-600" />
-                  <span className="font-medium text-blue-700">View on Map</span>
-                </div>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Devices */}
-      <div className="bg-white rounded-xl shadow-sm border p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-gray-900">Recent Location Updates</h2>
-          <Link to="/admin/locations" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-            View all locations →
-          </Link>
-        </div>
-        <div className="space-y-4">
-          {recentDevices.length === 0 ? (
-            <p className="text-gray-600 text-center py-8">No devices available</p>
           ) : (
-            recentDevices.map((device) => (
-              <div key={device.id} className="p-4 border border-gray-200 rounded-lg hover:border-blue-300 transition-all">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h4 className="font-bold text-gray-900">{device.agent.computerName}</h4>
-                    <div className="flex items-center space-x-1 text-sm text-gray-600 mt-1">
-                      <span>📍</span>
-                      <span>{device.location || 'Unknown'}</span>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-sm font-bold text-blue-600">
-                      {Math.round(
-                        ([
-                          device.checks.network.PingSuccess,
-                          device.checks.printer.ServiceRunning,
-                          device.checks.disk.PercentFree > 10
-                        ].filter((s) => s).length / 3) * 100
-                      )}%
-                    </span>
-                    <div className="flex items-center space-x-1 text-xs text-gray-600 mt-1">
-                      <Clock className="w-3 h-3" />
-                      <span>
-                        {new Date(device.agent.lastUpdated).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-3">
-                  <div
-                    className={`flex items-center space-x-1 text-xs px-2 py-1 rounded ${
-                      device.checks.network.PingSuccess
-                        ? 'bg-green-50 text-green-700'
-                        : 'bg-red-50 text-red-700'
-                    }`}
-                  >
-                    <Wifi className="w-3 h-3" />
-                    <span>Network</span>
-                  </div>
-                  <div
-                    className={`flex items-center space-x-1 text-xs px-2 py-1 rounded ${
-                      device.checks.printer.ServiceRunning
-                        ? 'bg-green-50 text-green-700'
-                        : 'bg-red-50 text-red-700'
-                    }`}
-                  >
-                    <Printer className="w-3 h-3" />
-                    <span>Printer</span>
-                  </div>
-                  <div
-                    className={`flex items-center space-x-1 text-xs px-2 py-1 rounded ${
-                      device.checks.disk.PercentFree > 10
-                        ? 'bg-green-50 text-green-700'
-                        : 'bg-red-50 text-red-700'
-                    }`}
-                  >
-                    <HardDrive className="w-3 h-3" />
-                    <span>Disk</span>
-                  </div>
-                </div>
-              </div>
-            ))
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {devices.map((device) => (
+                <DeviceCard 
+                  key={device.id} 
+                  device={device} 
+                  onDelete={handleDeleteDevice}
+                />
+              ))}
+            </div>
           )}
         </div>
-      </div>
 
-      {/* Bottom Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border p-6">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="p-2 bg-blue-50 rounded-lg">
-              <Wifi className="w-6 h-6 text-blue-600" />
+        {/* Demo Information */}
+        <div className="card bg-gradient-to-br from-gray-50 to-gray-100 border-dashed border-2">
+          <div className="flex items-start gap-4">
+            <div className="p-3 bg-white rounded-lg">
+              <Info className="w-6 h-6 text-gray-600" />
             </div>
-            <div>
-              <p className="text-sm text-gray-500">Network Connectivity</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.online}/{stats.total}</p>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Hackathon Demo Information</h3>
+              <p className="text-gray-600 mb-4">
+                This is a demo dashboard for the ServicePulse hackathon project. Real devices would connect via the PowerShell agent which sends health data to Firebase in real-time.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div className="p-3 bg-white rounded-lg">
+                  <div className="font-medium text-gray-900 mb-1">PowerShell Agent</div>
+                  <div className="text-gray-600">Self-healing Windows agent monitors network, printer, and disk</div>
+                </div>
+                <div className="p-3 bg-white rounded-lg">
+                  <div className="font-medium text-gray-900 mb-1">Firebase Integration</div>
+                  <div className="text-gray-600">Real-time data sync between agents and dashboard</div>
+                </div>
+                <div className="p-3 bg-white rounded-lg">
+                  <div className="font-medium text-gray-900 mb-1">Automatic Repair</div>
+                  <div className="text-gray-600">Agent automatically fixes common issues when detected</div>
+                </div>
+              </div>
             </div>
           </div>
-          <p className="text-sm text-gray-600">Devices with active internet connection</p>
         </div>
+      </main>
 
-        <div className="bg-white rounded-xl shadow-sm border p-6">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="p-2 bg-purple-50 rounded-lg">
-              <Printer className="w-6 h-6 text-purple-600" />
-            </div>
+      {/* Footer */}
+      <footer className="mt-12 py-8 border-t border-gray-200 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
             <div>
-              <p className="text-sm text-gray-500">Printer Services</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {devices.filter(d => d.checks.printer.ServiceRunning).length}/{stats.total}
+              <h3 className="text-lg font-bold text-gray-900">ServicePulse</h3>
+              <p className="text-gray-600 mt-1">Hackathon Project • Real-time Windows Health Monitoring</p>
+            </div>
+            <div className="text-center md:text-right">
+              <p className="text-sm text-gray-500">
+                Dashboard Version 1.0.0 • Built with React, TypeScript, and Firebase
+              </p>
+              <p className="text-xs text-gray-400 mt-2">
+                Last updated: {new Date().toLocaleString()}
               </p>
             </div>
           </div>
-          <p className="text-sm text-gray-600">Print spooler services running</p>
         </div>
-
-        <div className="bg-white rounded-xl shadow-sm border p-6">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="p-2 bg-green-50 rounded-lg">
-              <HardDrive className="w-6 h-6 text-green-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Disk Space</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {devices.filter(d => d.checks.disk.PercentFree > 10).length}/{stats.total}
-              </p>
-            </div>
-          </div>
-          <p className="text-sm text-gray-600">Devices with sufficient disk space</p>
-        </div>
-      </div>
+      </footer>
     </div>
   );
 };

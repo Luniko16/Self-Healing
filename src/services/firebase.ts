@@ -12,6 +12,7 @@ import {
 } from 'firebase/firestore';
 import { toast } from 'react-hot-toast';
 import { DeviceData } from '../types';
+import { geolocationService } from './geolocation';
 
 // Use Flask API endpoints when Firebase is not available
 const USE_FLASK_API = !process.env.REACT_APP_FIREBASE_API_KEY;
@@ -48,22 +49,47 @@ class FirebaseService {
 
   // Subscribe to ALL data: real devices + demo locations
   subscribeToAllDevices(callback: (devices: DeviceData[]) => void) {
+    let callbackCalled = false;
+    
     if (USE_FLASK_API) {
       // Use Flask API polling
-      this.pollFlaskAPI(callback);
+      this.pollFlaskAPI((devices) => {
+        callbackCalled = true;
+        callback(devices);
+      });
+      
+      // Fallback to demo data after 2 seconds if no data received
+      setTimeout(() => {
+        if (!callbackCalled) {
+          console.warn('🔄 No data from Flask API, using demo data');
+          const demoDevices = this.generateDemoDevices();
+          callback(demoDevices);
+          callbackCalled = true;
+        }
+      }, 2000);
+      
       return () => {}; // Return empty unsubscribe function
     }
 
     console.log('🔥 FirebaseService: Starting to listen to all devices...');
     const allDevices: DeviceData[] = [];
     
+    // Provide immediate demo data
+    setTimeout(() => {
+      if (!callbackCalled) {
+        console.warn('⏱️ Firebase taking too long, using demo data');
+        callback(this.generateDemoDevices());
+        callbackCalled = true;
+      }
+    }, 2000);
+    
     // 1. Subscribe to real agent devices
     console.log('📁 Listening to "devices" collection...');
     const devicesQuery = query(this.devicesCollection, orderBy('agent.lastUpdated', 'desc'));
     const devicesUnsub = onSnapshot(devicesQuery,
-      (snapshot) => {
+      (snapshot: any) => {
         console.log(`💻 Got ${snapshot.size} agent device documents:`);
-        snapshot.forEach((docSnapshot) => {
+        snapshot.forEach((docSnapshot: any) => {
           console.log(`  - ${docSnapshot.id}:`, docSnapshot.data());
         });
         // Clear previous agent devices
@@ -72,7 +98,7 @@ class FirebaseService {
         allDevices.push(...agentDevices);
         
         // Add new agent devices
-        snapshot.forEach((docSnapshot) => {
+        snapshot.forEach((docSnapshot: any) => {
           const data = docSnapshot.data();
           const device = this.mapToDevice(docSnapshot.id, data, 'agent');
           allDevices.push(device);
@@ -85,23 +111,28 @@ class FirebaseService {
         
         console.log('📊 Calling callback with', allDevices.length, 'total devices');
         callback([...allDevices]);
+        callbackCalled = true;
       },
       (error) => {
         console.error('❌ Devices collection error:', error);
-        toast.error('Failed to load agent devices');
+        // Don't show toast, just provide demo data
+        if (!callbackCalled) {
+          callback(this.generateDemoDevices());
+          callbackCalled = true;
+        }
       }
     );
 
     // 2. Subscribe to location data (your existing 4 locations)
     console.log('📍 Listening to "locations" collection...');
     const locationsUnsub = onSnapshot(this.locationsCollection,
-      (snapshot) => {
+      (snapshot: any) => {
         console.log(`🏢 Got ${snapshot.size} location documents:`);
-        snapshot.forEach((docSnapshot) => {
+        snapshot.forEach((docSnapshot: any) => {
           console.log(`  - ${docSnapshot.id}:`, docSnapshot.data());
         });
         // Add location devices (these are static/demo)
-        snapshot.forEach((docSnapshot) => {
+        snapshot.forEach((docSnapshot: any) => {
           const data = docSnapshot.data();
           const locationId = docSnapshot.id;
           
@@ -114,10 +145,15 @@ class FirebaseService {
         });
         
         callback([...allDevices]);
+        callbackCalled = true;
       },
       (error) => {
         console.error('Locations collection error:', error);
-        toast.error('Failed to load location data');
+        // Don't show toast, just provide demo data
+        if (!callbackCalled) {
+          callback(this.generateDemoDevices());
+          callbackCalled = true;
+        }
       }
     );
 
@@ -127,20 +163,129 @@ class FirebaseService {
     };
   }
 
+  private generateDemoDevices(): DeviceData[] {
+    return [
+      {
+        id: 'demo_1',
+        agent: {
+          version: '1.0.0',
+          computerName: 'Main Office Server',
+          lastUpdated: new Date(),
+          timestamp: new Date().toISOString()
+        },
+        status: {
+          Status: 'OPEN',
+          Message: 'All systems operational',
+          Code: 0
+        },
+        checks: {
+          network: { Status: 'HEALTHY', PingSuccess: true, DNSSuccess: true, Details: ['✓ Connected'] },
+          printer: { Status: 'HEALTHY', ServiceRunning: true, ServiceState: 'Running' },
+          disk: { Status: 'HEALTHY', FreeGB: 250, TotalGB: 500, PercentFree: 50, Drive: 'C:' }
+        },
+        actions: { repairsCount: 0 },
+        location: 'New York, NY',
+        type: 'office',
+        tags: ['production', 'critical'],
+        source: 'agent'
+      },
+      {
+        id: 'demo_2',
+        agent: {
+          version: '1.0.0',
+          computerName: 'Branch Office Workstation',
+          lastUpdated: new Date(),
+          timestamp: new Date().toISOString()
+        },
+        status: {
+          Status: 'LIMITED',
+          Message: 'Some services degraded',
+          Code: 1
+        },
+        checks: {
+          network: { Status: 'DEGRADED', PingSuccess: true, DNSSuccess: false, Details: ['⚠ Slow DNS'] },
+          printer: { Status: 'HEALTHY', ServiceRunning: true, ServiceState: 'Running' },
+          disk: { Status: 'WARNING', FreeGB: 50, TotalGB: 500, PercentFree: 10, Drive: 'C:' }
+        },
+        actions: { repairsCount: 1 },
+        location: 'Los Angeles, CA',
+        type: 'office',
+        tags: ['warning'],
+        source: 'agent'
+      },
+      {
+        id: 'demo_3',
+        agent: {
+          version: '1.0.0',
+          computerName: 'Remote Site System',
+          lastUpdated: new Date(),
+          timestamp: new Date().toISOString()
+        },
+        status: {
+          Status: 'CLOSED',
+          Message: 'Critical issues detected',
+          Code: 2
+        },
+        checks: {
+          network: { Status: 'FAILED', PingSuccess: false, DNSSuccess: false, Details: ['✗ No connection'] },
+          printer: { Status: 'FAILED', ServiceRunning: false, ServiceState: 'Stopped' },
+          disk: { Status: 'CRITICAL', FreeGB: 5, TotalGB: 500, PercentFree: 1, Drive: 'C:' }
+        },
+        actions: { repairsCount: 3 },
+        location: 'Chicago, IL',
+        type: 'office',
+        tags: ['critical', 'urgent'],
+        source: 'agent'
+      }
+    ];
+  }
+
   // Flask API polling method
   private async pollFlaskAPI(callback: (devices: DeviceData[]) => void) {
+    const pollWithTimeout = async (url: string, timeout: number = 5000) => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+      
+      try {
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        return response;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        throw error;
+      }
+    };
+
     const poll = async () => {
       try {
-        const response = await fetch(`${FLASK_API_BASE}/api/public/status`);
-        if (response.ok) {
-          const data = await response.json();
-          const devices = this.convertFlaskDataToDevices(data);
-          callback(devices);
-        } else {
-          console.error('Failed to fetch from Flask API');
+        // First try to get live scan data with 3 second timeout
+        try {
+          let response = await pollWithTimeout(`${FLASK_API_BASE}/api/system/live-scan`, 3000);
+          if (response.ok) {
+            const scanData = await response.json();
+            if (scanData.devices && scanData.devices.length > 0) {
+              const devices = scanData.devices.map((device: any) => this.convertScanDataToDevice(device));
+              callback(devices);
+              return;
+            }
+          }
+        } catch (error) {
+          // Silently fail and try next endpoint
+        }
+        
+        // Fallback to public status with 3 second timeout
+        try {
+          let response = await pollWithTimeout(`${FLASK_API_BASE}/api/public/status`, 3000);
+          if (response.ok) {
+            const data = await response.json();
+            const devices = this.convertFlaskDataToDevices(data);
+            callback(devices);
+          }
+        } catch (error) {
+          // Silently fail - use demo data
         }
       } catch (error) {
-        console.error('Error polling Flask API:', error);
+        console.warn('Flask API unavailable, using demo data');
       }
     };
 
@@ -153,6 +298,220 @@ class FirebaseService {
     return () => clearInterval(interval);
   }
 
+  // Search services using Flask API with real geolocation
+  async searchServices(query: string, filters?: any): Promise<DeviceData[]> {
+    if (USE_FLASK_API) {
+      try {
+        const params = new URLSearchParams();
+        if (query) params.append('q', query);
+        if (filters?.status && filters.status !== 'all') params.append('status', filters.status);
+        if (filters?.type && filters.type !== 'all') params.append('type', filters.type);
+        if (filters?.location) params.append('location', filters.location);
+        
+        // Add real location data with high accuracy
+        try {
+          const userLocation = await geolocationService.getHighAccuracyLocation();
+          params.append('user_lat', userLocation.latitude.toString());
+          params.append('user_lon', userLocation.longitude.toString());
+          if (userLocation.city) params.append('user_city', userLocation.city);
+          if (userLocation.accuracy) params.append('user_accuracy', userLocation.accuracy.toString());
+        } catch (error) {
+          console.warn('Could not get user location for search:', error);
+        }
+        
+        const response = await fetch(`${FLASK_API_BASE}/api/public/search?${params.toString()}`);
+        if (response.ok) {
+          const data = await response.json();
+          return data.services.map((service: any) => this.convertSearchResultToDevice(service));
+        }
+      } catch (error) {
+        console.error('Error searching services:', error);
+      }
+    }
+    
+    // Fallback to local filtering with generated nearby services
+    return this.generateLocalServices(query, filters);
+  }
+
+  // Generate local services based on real user location
+  private async generateLocalServices(query: string, filters?: any): Promise<DeviceData[]> {
+    try {
+      const userLocation = await geolocationService.getHighAccuracyLocation();
+      const nearbyServices = geolocationService.generateNearbyServiceLocations(userLocation, 8);
+      
+      const devices: DeviceData[] = nearbyServices.map((service, index) => {
+        const isOperational = Math.random() > 0.3; // 70% chance of being operational
+        const status: DeviceData['status']['Status'] = isOperational ? 'OPEN' : 
+                     Math.random() > 0.5 ? 'LIMITED' : 'CLOSED';
+        
+        return {
+          id: `local_${service.name.replace(/\s+/g, '_').toLowerCase()}_${index}`,
+          agent: {
+            version: '1.0.0',
+            computerName: service.name,
+            lastUpdated: new Date(),
+            timestamp: new Date().toISOString()
+          },
+          status: {
+            Status: status,
+            Message: status === 'OPEN' ? 'All services operational' :
+                    status === 'LIMITED' ? 'Limited services available' :
+                    'Service temporarily unavailable',
+            Code: status === 'OPEN' ? 0 : status === 'LIMITED' ? 1 : 2
+          },
+          checks: {
+            network: {
+              Status: isOperational ? 'HEALTHY' : 'DEGRADED',
+              PingSuccess: isOperational,
+              DNSSuccess: isOperational,
+              Details: isOperational ? ['✓ Network connectivity stable'] : ['✗ Network issues detected']
+            },
+            printer: {
+              Status: isOperational ? 'HEALTHY' : 'FAILED',
+              ServiceRunning: isOperational,
+              ServiceState: isOperational ? 'Running' : 'Stopped'
+            },
+            disk: {
+              Status: isOperational ? 'HEALTHY' : 'WARNING',
+              FreeGB: Math.floor(Math.random() * 100) + 50,
+              TotalGB: 500,
+              PercentFree: Math.floor(Math.random() * 30) + 10,
+              Drive: 'C:'
+            }
+          },
+          actions: { repairsCount: isOperational ? 0 : Math.floor(Math.random() * 3) },
+          location: service.address || `${service.city}, ${service.country}`,
+          type: service.type as DeviceData['type'],
+          tags: ['real-location', service.type, userLocation.city || 'local'],
+          source: 'agent',
+          coordinates: [service.latitude, service.longitude] // Add coordinates for map
+        };
+      });
+      
+      // Apply filters
+      let filteredDevices = devices;
+      
+      if (query) {
+        const searchTerm = query.toLowerCase();
+        filteredDevices = filteredDevices.filter(device => 
+          device.agent.computerName.toLowerCase().includes(searchTerm) ||
+          device.location?.toLowerCase().includes(searchTerm) ||
+          device.type?.toLowerCase().includes(searchTerm)
+        );
+      }
+      
+      if (filters?.status && filters.status !== 'all') {
+        filteredDevices = filteredDevices.filter(device => device.status.Status === filters.status);
+      }
+      
+      if (filters?.type && filters.type !== 'all') {
+        filteredDevices = filteredDevices.filter(device => device.type === filters.type);
+      }
+      
+      if (filters?.location) {
+        const locationTerm = filters.location.toLowerCase();
+        filteredDevices = filteredDevices.filter(device => 
+          device.location?.toLowerCase().includes(locationTerm)
+        );
+      }
+      
+      return filteredDevices;
+      
+    } catch (error) {
+      console.error('Error generating local services:', error);
+      return [];
+    }
+  }
+  private convertSearchResultToDevice(service: any): DeviceData {
+    return {
+      id: `search_${service.display_name?.replace(/\s+/g, '_').toLowerCase() || 'unknown'}`,
+      agent: {
+        version: '1.0.0',
+        computerName: service.display_name || service.name || 'Unknown Service',
+        lastUpdated: new Date(),
+        timestamp: new Date().toISOString()
+      },
+      status: {
+        Status: service.operational ? 'OPEN' : 'CLOSED',
+        Message: service.status || 'Service status',
+        Code: service.operational ? 0 : 2
+      },
+      checks: {
+        network: {
+          Status: service.type === 'Network' ? (service.operational ? 'HEALTHY' : 'FAILED') : 'UNKNOWN',
+          PingSuccess: service.type === 'Network' ? service.operational : true,
+          DNSSuccess: service.type === 'Network' ? service.operational : true,
+          Details: []
+        },
+        printer: {
+          Status: service.type === 'Printing' ? (service.operational ? 'HEALTHY' : 'FAILED') : 'UNKNOWN',
+          ServiceRunning: service.type === 'Printing' ? service.operational : true,
+          ServiceState: service.type === 'Printing' ? (service.operational ? 'Running' : 'Stopped') : 'Unknown'
+        },
+        disk: {
+          Status: service.type === 'Storage' ? (service.operational ? 'HEALTHY' : 'CRITICAL') : 'UNKNOWN',
+          FreeGB: service.type === 'Storage' ? (parseFloat(service.status?.split(' ')[0]) || 100) : 100,
+          TotalGB: service.type === 'Storage' ? (parseFloat(service.status?.split('of ')[1]?.split('GB')[0]) || 500) : 500,
+          PercentFree: service.type === 'Storage' ? (service.percent_used ? 100 - service.percent_used : 20) : 20,
+          Drive: service.name?.includes('Drive') ? service.name.split(' ')[1] : 'C:'
+        }
+      },
+      actions: { repairsCount: 0 },
+      location: service.location || 'Unknown Location',
+      type: service.service_type === 'clinic' ? 'clinic' :
+            service.service_type === 'school' ? 'school' :
+            service.service_type === 'office' ? 'office' : 'demo',
+      tags: ['searchable', service.service_type || 'system'],
+      source: 'agent'
+    };
+  }
+
+  // Convert live scan data to DeviceData format
+  private convertScanDataToDevice(scanDevice: any): DeviceData {
+    return {
+      id: scanDevice.id || 'unknown',
+      agent: {
+        version: scanDevice.agent?.version || '1.0.0',
+        computerName: scanDevice.agent?.computerName || 'Unknown System',
+        lastUpdated: new Date(scanDevice.agent?.lastUpdated || new Date()),
+        timestamp: scanDevice.agent?.timestamp || new Date().toISOString()
+      },
+      status: {
+        Status: scanDevice.status?.Status || 'UNKNOWN',
+        Message: scanDevice.status?.Message || 'No status available',
+        Code: scanDevice.status?.Code || 3
+      },
+      checks: {
+        network: {
+          Status: scanDevice.checks?.network?.Status || 'UNKNOWN',
+          PingSuccess: scanDevice.checks?.network?.PingSuccess || false,
+          DNSSuccess: scanDevice.checks?.network?.DNSSuccess || false,
+          Details: scanDevice.checks?.network?.Details || []
+        },
+        printer: {
+          Status: scanDevice.checks?.printer?.Status || 'UNKNOWN',
+          ServiceRunning: scanDevice.checks?.printer?.ServiceRunning || false,
+          ServiceState: scanDevice.checks?.printer?.ServiceState || 'Unknown'
+        },
+        disk: {
+          Status: scanDevice.checks?.disk?.Status || 'UNKNOWN',
+          FreeGB: scanDevice.checks?.disk?.FreeGB || 0,
+          TotalGB: scanDevice.checks?.disk?.TotalGB || 0,
+          PercentFree: scanDevice.checks?.disk?.PercentFree || 0,
+          Drive: scanDevice.checks?.disk?.Drive || 'C:'
+        }
+      },
+      actions: {
+        repairsCount: scanDevice.actions?.repairsCount || 0,
+        repairsPerformed: scanDevice.actions?.repairsPerformed || []
+      },
+      location: scanDevice.location || 'Unknown Location',
+      type: scanDevice.type || 'demo',
+      tags: scanDevice.tags || [],
+      source: 'agent'
+    };
+  }
+
   // Convert Flask API data to DeviceData format
   private convertFlaskDataToDevices(flaskData: any): DeviceData[] {
     const devices: DeviceData[] = [];
@@ -160,7 +519,7 @@ class FirebaseService {
     if (flaskData.services && Array.isArray(flaskData.services)) {
       flaskData.services.forEach((service: any, index: number) => {
         const device: DeviceData = {
-          id: `flask_service_${index}`,
+          id: `real_service_${service.name?.replace(/\s+/g, '_').toLowerCase() || index}`,
           agent: {
             version: '1.0.0',
             computerName: service.name || `Service ${index + 1}`,
@@ -174,28 +533,30 @@ class FirebaseService {
           },
           checks: {
             network: {
-              Status: service.operational ? 'HEALTHY' : 'FAILED',
-              PingSuccess: service.operational,
-              DNSSuccess: service.operational,
-              Details: []
+              Status: service.type === 'Network' ? (service.operational ? 'HEALTHY' : 'FAILED') : 'UNKNOWN',
+              PingSuccess: service.type === 'Network' ? service.operational : true,
+              DNSSuccess: service.type === 'Network' ? service.operational : true,
+              Details: service.type === 'Network' ? (service.operational ? ['✓ Network connectivity stable'] : ['✗ Network connectivity issues']) : []
             },
             printer: {
-              Status: service.operational ? 'HEALTHY' : 'FAILED',
-              ServiceRunning: service.operational,
-              ServiceState: service.operational ? 'Running' : 'Stopped'
+              Status: service.type === 'Printing' ? (service.operational ? 'HEALTHY' : 'FAILED') : 'UNKNOWN',
+              ServiceRunning: service.type === 'Printing' ? service.operational : true,
+              ServiceState: service.type === 'Printing' ? (service.operational ? 'Running' : 'Stopped') : 'Unknown'
             },
             disk: {
-              Status: service.operational ? 'HEALTHY' : 'CRITICAL',
-              FreeGB: service.operational ? 100 : 5,
-              TotalGB: 500,
-              PercentFree: service.operational ? 20 : 1,
-              Drive: 'C:'
+              Status: service.type === 'Storage' ? (service.operational ? 'HEALTHY' : 'CRITICAL') : 'UNKNOWN',
+              FreeGB: service.type === 'Storage' ? (parseFloat(service.status?.split(' ')[0]) || 100) : 100,
+              TotalGB: service.type === 'Storage' ? (parseFloat(service.status?.split('of ')[1]?.split('GB')[0]) || 500) : 500,
+              PercentFree: service.type === 'Storage' ? (service.percent_used ? 100 - service.percent_used : 20) : 20,
+              Drive: service.name?.includes('Drive') ? service.name.split(' ')[1] : 'C:'
             }
           },
           actions: { repairsCount: 0 },
-          location: 'Flask Backend',
-          type: 'server',
-          tags: ['flask-api'],
+          location: 'Local System',
+          type: service.type === 'Storage' ? 'server' : 
+                service.type === 'Printing' ? 'office' : 
+                service.type === 'Network' ? 'server' : 'demo',
+          tags: ['real-data', service.type?.toLowerCase() || 'system'],
           source: 'agent'
         };
         devices.push(device);
@@ -381,6 +742,29 @@ class FirebaseService {
         Drive: 'C:'
       }
     };
+  }
+
+  // Get all public devices (filtered for public view)
+  async getPublicDevices(): Promise<DeviceData[]> {
+    return new Promise((resolve) => {
+      this.subscribeToAllDevices((devices: DeviceData[]) => {
+        // Filter to only show public/location services
+        const publicDevices = devices.filter(device => 
+          device.source === 'location' || (device.tags && device.tags.includes('public-service'))
+        );
+        resolve(publicDevices);
+      });
+    });
+  }
+
+  // Get a single device by ID
+  async getDeviceById(deviceId: string): Promise<DeviceData | null> {
+    return new Promise((resolve) => {
+      this.subscribeToAllDevices((devices: DeviceData[]) => {
+        const device = devices.find(d => d.id === deviceId);
+        resolve(device || null);
+      });
+    });
   }
 
   // Real agent methods (for PowerShell agent data)

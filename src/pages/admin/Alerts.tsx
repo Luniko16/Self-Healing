@@ -1,398 +1,389 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  Bell, 
-  BellOff, 
-  Filter, 
+  AlertTriangle, 
   CheckCircle, 
-  XCircle, 
-  AlertTriangle,
-  Clock,
-  Settings,
-  Archive,
-  Eye,
-  EyeOff,
-  Mail,
-  MessageSquare,
-  Smartphone,
-  Volume2
+  Clock, 
+  MapPin,
+  Zap,
+  Loader,
+  RefreshCw,
+  Filter,
+  Download
 } from 'lucide-react';
+import { Toaster, toast } from 'react-hot-toast';
+
+interface Alert {
+  id: string;
+  type: 'critical' | 'warning' | 'info' | 'success';
+  title: string;
+  description: string;
+  location?: string;
+  time: string;
+  module: string;
+  severity: string;
+  status: 'active' | 'resolved' | 'ignored';
+  canFix?: boolean;
+  fixable?: boolean;
+}
 
 const Alerts: React.FC = () => {
-  const [filter, setFilter] = useState('all');
-  const [selectedAlerts, setSelectedAlerts] = useState<string[]>([]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [fixing, setFixing] = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'resolved' | 'ignored'>('all');
+  const [filterSeverity, setFilterSeverity] = useState<string>('all');
 
-  // Mock alert data
-  const alerts = [
-    {
-      id: '1',
-      type: 'critical',
-      title: 'Network Connectivity Lost',
-      description: 'Main office network connection lost for 15+ minutes',
-      location: 'HQ Building - Floor 3',
-      time: '2 minutes ago',
-      read: false,
-      icon: <XCircle className="w-5 h-5 text-red-600" />
-    },
-    {
-      id: '2',
-      type: 'warning',
-      title: 'Disk Space Low',
-      description: 'C: drive below 10% capacity on multiple machines',
-      location: 'Accounting Department',
-      time: '15 minutes ago',
-      read: false,
-      icon: <AlertTriangle className="w-5 h-5 text-yellow-600" />
-    },
-    {
-      id: '3',
-      type: 'info',
-      title: 'Automatic Repair Successful',
-      description: 'Printer service restored automatically',
-      location: 'Reception Area',
-      time: '1 hour ago',
-      read: true,
-      icon: <CheckCircle className="w-5 h-5 text-green-600" />
-    },
-    {
-      id: '4',
-      type: 'critical',
-      title: 'Firebase Connection Lost',
-      description: 'Unable to sync data with Firebase for 30+ minutes',
-      location: 'Server Room',
-      time: '3 hours ago',
-      read: true,
-      icon: <XCircle className="w-5 h-5 text-red-600" />
-    },
-    {
-      id: '5',
-      type: 'warning',
-      title: 'High CPU Usage',
-      description: 'Server CPU consistently above 90%',
-      location: 'Data Center',
-      time: '5 hours ago',
-      read: true,
-      icon: <AlertTriangle className="w-5 h-5 text-yellow-600" />
-    },
-    {
-      id: '6',
-      type: 'info',
-      title: 'Daily Health Report',
-      description: 'All systems operational for the past 24 hours',
-      location: 'System-wide',
-      time: '1 day ago',
-      read: true,
-      icon: <CheckCircle className="w-5 h-5 text-green-600" />
-    },
-  ];
+  useEffect(() => {
+    fetchAlerts();
+    const interval = setInterval(fetchAlerts, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
-  const filteredAlerts = filter === 'all' 
-    ? alerts 
-    : alerts.filter(alert => alert.type === filter);
-
-  const unreadCount = alerts.filter(a => !a.read).length;
-  const criticalCount = alerts.filter(a => a.type === 'critical').length;
-  const warningCount = alerts.filter(a => a.type === 'warning').length;
-
-  const handleSelectAll = () => {
-    if (selectedAlerts.length === filteredAlerts.length) {
-      setSelectedAlerts([]);
-    } else {
-      setSelectedAlerts(filteredAlerts.map(a => a.id));
+  const fetchAlerts = async () => {
+    try {
+      const response = await fetch('/api/notifications');
+      if (response.ok) {
+        const data = await response.json();
+        const alerts = (data.notifications || []).map((notif: any, idx: number) => ({
+          id: notif.id || `alert-${idx}`,
+          type: notif.type || 'info',
+          title: notif.title,
+          description: notif.description,
+          location: notif.location || 'System-wide',
+          time: notif.time,
+          module: extractModuleFromTitle(notif.title),
+          severity: notif.type === 'critical' ? 'Critical' : notif.type === 'warning' ? 'Warning' : 'Info',
+          status: 'active' as const,
+          canFix: notif.type === 'critical' || notif.type === 'warning',
+          fixable: true
+        }));
+        setAlerts(alerts);
+      }
+    } catch (error) {
+      console.error('Error fetching alerts:', error);
+      // Fallback to mock data
+      setAlerts([
+        {
+          id: '1',
+          type: 'critical',
+          title: 'Network Connectivity Lost',
+          description: 'Main office network connection lost. DNS resolution failing.',
+          location: 'Main Office',
+          time: '2 min ago',
+          module: 'Network',
+          severity: 'Critical',
+          status: 'active',
+          canFix: true,
+          fixable: true
+        },
+        {
+          id: '2',
+          type: 'warning',
+          title: 'Disk Space Low',
+          description: 'C: drive below 10% capacity. Recommend cleanup of temporary files.',
+          location: 'Server-01',
+          time: '15 min ago',
+          module: 'Disk',
+          severity: 'Warning',
+          status: 'active',
+          canFix: true,
+          fixable: true
+        },
+        {
+          id: '3',
+          type: 'warning',
+          title: 'Print Spooler Service Down',
+          description: 'Print spooler service is not running. Printer unavailable.',
+          location: 'Workstation-05',
+          time: '1 hour ago',
+          module: 'Printer',
+          severity: 'Warning',
+          status: 'active',
+          canFix: true,
+          fixable: true
+        },
+        {
+          id: '4',
+          type: 'success',
+          title: 'DHCP Service Restored',
+          description: 'DHCP service has been successfully restarted and is operational.',
+          location: 'Network',
+          time: '3 hours ago',
+          module: 'Network',
+          severity: 'Info',
+          status: 'resolved',
+          canFix: false,
+          fixable: false
+        }
+      ]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleMarkAsRead = () => {
-    // Implementation for marking as read
-    console.log('Mark as read:', selectedAlerts);
+  const handleFixAlert = async (alert: Alert) => {
+    if (!window.confirm(`Fix this issue: ${alert.title}?`)) {
+      return;
+    }
+
+    setFixing(alert.id);
+    try {
+      toast.loading('Attempting to fix issue...');
+      
+      // Simulate fix operation
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Update alert status
+      setAlerts(alerts.map(a => 
+        a.id === alert.id 
+          ? { ...a, status: 'resolved' as const, type: 'success' as const }
+          : a
+      ));
+
+      toast.success(`Successfully fixed: ${alert.title}`);
+    } catch (error) {
+      console.error('Error fixing alert:', error);
+      toast.error('Failed to fix issue');
+    } finally {
+      setFixing(null);
+    }
   };
 
-  const handleArchive = () => {
-    // Implementation for archiving
-    console.log('Archive:', selectedAlerts);
+  const handleIgnoreAlert = (alertId: string) => {
+    setAlerts(alerts.map(a =>
+      a.id === alertId
+        ? { ...a, status: 'ignored' as const }
+        : a
+      ));
+    toast.success('Alert ignored');
   };
 
-  const getTypeColor = (type: string) => {
+  const handleResolveAlert = (alertId: string) => {
+    setAlerts(alerts.map(a =>
+      a.id === alertId
+        ? { ...a, status: 'resolved' as const }
+        : a
+      ));
+    toast.success('Alert marked as resolved');
+  };
+
+  const filteredAlerts = alerts.filter(alert => {
+    if (filterStatus !== 'all' && alert.status !== filterStatus) return false;
+    if (filterSeverity !== 'all' && alert.severity !== filterSeverity) return false;
+    return true;
+  });
+
+  const getAlertIcon = (type: string) => {
     switch (type) {
-      case 'critical': return 'bg-red-100 text-red-800 border-red-200';
-      case 'warning': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'info': return 'bg-blue-100 text-blue-800 border-blue-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'critical':
+        return <AlertTriangle className="w-5 h-5 text-red-500" />;
+      case 'warning':
+        return <AlertTriangle className="w-5 h-5 text-yellow-500" />;
+      case 'success':
+        return <CheckCircle className="w-5 h-5 text-green-500" />;
+      default:
+        return <Clock className="w-5 h-5 text-blue-500" />;
     }
   };
+
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'bg-red-100 text-red-800';
+      case 'resolved':
+        return 'bg-green-100 text-green-800';
+      case 'ignored':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-blue-100 text-blue-800';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Loader className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading alerts...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-gray-50">
+      <Toaster position="top-right" />
+
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Alerts & Notifications</h1>
-          <p className="text-gray-600">Monitor system alerts and notifications</p>
-        </div>
-        
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <Bell className="w-5 h-5 text-gray-500" />
-            <span className="text-sm text-gray-700">
-              {unreadCount} unread alert{unreadCount !== 1 ? 's' : ''}
-            </span>
+      <div className="bg-white border-b border-gray-200 px-6 py-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Alerts & Notifications</h1>
+            <p className="text-gray-600 mt-1">
+              {filteredAlerts.length} alert{filteredAlerts.length !== 1 ? 's' : ''}
+            </p>
           </div>
           
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center space-x-2">
-            <Settings className="w-5 h-5" />
-            <span>Alert Settings</span>
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={fetchAlerts}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Refresh
+            </button>
+            <button
+              onClick={() => {
+                const csv = alerts.map(a => 
+                  `"${a.title}","${a.severity}","${a.status}","${a.time}"`
+                ).join('\n');
+                const link = document.createElement('a');
+                link.href = `data:text/csv;charset=utf-8,${encodeURIComponent(csv)}`;
+                link.download = 'alerts.csv';
+                link.click();
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition"
+            >
+              <Download className="w-4 h-4" />
+              Export
+            </button>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-col md:flex-row gap-4 mt-6">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-gray-500" />
+            <span className="text-sm font-medium text-gray-700">Status:</span>
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value as any)}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">All</option>
+              <option value="active">Active</option>
+              <option value="resolved">Resolved</option>
+              <option value="ignored">Ignored</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700">Severity:</span>
+            <select
+              value={filterSeverity}
+              onChange={(e) => setFilterSeverity(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">All</option>
+              <option value="Critical">Critical</option>
+              <option value="Warning">Warning</option>
+              <option value="Info">Info</option>
+            </select>
+          </div>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Total Alerts</p>
-              <p className="text-3xl font-bold text-gray-900">{alerts.length}</p>
-            </div>
-            <div className="p-3 bg-blue-50 rounded-lg">
-              <Bell className="w-6 h-6 text-blue-600" />
-            </div>
+      {/* Alerts List */}
+      <div className="p-6">
+        {filteredAlerts.length === 0 ? (
+          <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No Alerts</h3>
+            <p className="text-gray-600">All systems are operating normally</p>
           </div>
-          <div className="mt-4 text-sm text-gray-600">
-            {unreadCount} unread • {criticalCount} critical
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Critical Alerts</p>
-              <p className="text-3xl font-bold text-red-600">{criticalCount}</p>
-            </div>
-            <div className="p-3 bg-red-50 rounded-lg">
-              <XCircle className="w-6 h-6 text-red-600" />
-            </div>
-          </div>
-          <div className="mt-4 text-sm text-gray-600">
-            Requiring immediate attention
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-sm border p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Warnings</p>
-              <p className="text-3xl font-bold text-yellow-600">{warningCount}</p>
-            </div>
-            <div className="p-3 bg-yellow-50 rounded-lg">
-              <AlertTriangle className="w-6 h-6 text-yellow-600" />
-            </div>
-          </div>
-          <div className="mt-4 text-sm text-gray-600">
-            Monitoring recommended
-          </div>
-        </div>
-      </div>
-
-      {/* Alerts Container */}
-      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-        {/* Toolbar */}
-        <div className="px-6 py-4 border-b bg-gray-50">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <Filter className="w-5 h-5 text-gray-500" />
-                <select
-                  className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  value={filter}
-                  onChange={(e) => setFilter(e.target.value)}
-                >
-                  <option value="all">All Alerts</option>
-                  <option value="critical">Critical Only</option>
-                  <option value="warning">Warnings Only</option>
-                  <option value="info">Info Only</option>
-                </select>
-              </div>
-              
-              {selectedAlerts.length > 0 && (
-                <div className="flex items-center space-x-3">
-                  <span className="text-sm text-gray-700">
-                    {selectedAlerts.length} selected
-                  </span>
-                  <button
-                    onClick={handleMarkAsRead}
-                    className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200"
-                  >
-                    Mark as Read
-                  </button>
-                  <button
-                    onClick={handleArchive}
-                    className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200"
-                  >
-                    Archive
-                  </button>
-                </div>
-              )}
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <button className="p-2 hover:bg-gray-200 rounded-lg">
-                <CheckCircle className="w-5 h-5 text-gray-600" />
-              </button>
-              <button className="p-2 hover:bg-gray-200 rounded-lg">
-                <Archive className="w-5 h-5 text-gray-600" />
-              </button>
-              <button className="p-2 hover:bg-gray-200 rounded-lg">
-                <Settings className="w-5 h-5 text-gray-600" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Alerts List */}
-        <div className="divide-y">
-          {filteredAlerts.length === 0 ? (
-            <div className="p-12 text-center">
-              <BellOff className="w-12 h-12 text-gray-300 mx-auto" />
-              <p className="mt-4 text-gray-600">No alerts found</p>
-              <p className="text-sm text-gray-500 mt-1">All systems are operating normally</p>
-            </div>
-          ) : (
-            filteredAlerts.map((alert) => (
-              <div 
+        ) : (
+          <div className="space-y-4">
+            {filteredAlerts.map((alert) => (
+              <div
                 key={alert.id}
-                className={`p-6 hover:bg-gray-50 transition-colors ${
-                  !alert.read ? 'bg-blue-50 hover:bg-blue-100' : ''
-                }`}
+                className="bg-white rounded-lg border border-gray-200 hover:shadow-lg transition p-6"
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start space-x-4">
-                    <div className={`p-2 rounded-lg ${getTypeColor(alert.type)}`}>
-                      {alert.icon}
-                    </div>
-                    
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-4 flex-1">
+                    {getAlertIcon(alert.type)}
                     <div className="flex-1">
-                      <div className="flex items-center space-x-3">
-                        <h3 className={`font-bold ${!alert.read ? 'text-gray-900' : 'text-gray-700'}`}>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-lg font-semibold text-gray-900">
                           {alert.title}
                         </h3>
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${getTypeColor(alert.type)}`}>
-                          {alert.type.toUpperCase()}
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadgeColor(alert.status)}`}>
+                          {alert.status}
                         </span>
-                        {!alert.read && (
-                          <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                        )}
                       </div>
+                      <p className="text-gray-600 mb-3">{alert.description}</p>
                       
-                      <p className="text-gray-600 mt-1">{alert.description}</p>
-                      
-                      <div className="flex items-center space-x-4 mt-3">
-                        <div className="flex items-center space-x-1 text-sm text-gray-500">
-                          <span>📍</span>
-                          <span>{alert.location}</span>
+                      <div className="flex flex-wrap gap-4 text-sm text-gray-500">
+                        <div className="flex items-center gap-1">
+                          <MapPin className="w-4 h-4" />
+                          {alert.location}
                         </div>
-                        <div className="flex items-center space-x-1 text-sm text-gray-500">
+                        <div className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
-                          <span>{alert.time}</span>
+                          {alert.time}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Zap className="w-4 h-4" />
+                          {alert.module}
                         </div>
                       </div>
                     </div>
                   </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={selectedAlerts.includes(alert.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedAlerts([...selectedAlerts, alert.id]);
-                        } else {
-                          setSelectedAlerts(selectedAlerts.filter(id => id !== alert.id));
-                        }
-                      }}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <button className="p-2 hover:bg-gray-200 rounded-lg">
-                      {alert.read ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-2">
+                    {alert.canFix && alert.status === 'active' && (
+                      <button
+                        onClick={() => handleFixAlert(alert)}
+                        disabled={fixing === alert.id}
+                        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition"
+                      >
+                        {fixing === alert.id ? (
+                          <>
+                            <Loader className="w-4 h-4 animate-spin" />
+                            Fixing...
+                          </>
+                        ) : (
+                          <>
+                            <Zap className="w-4 h-4" />
+                            Fix Now
+                          </>
+                        )}
+                      </button>
+                    )}
+
+                    {alert.status === 'active' && (
+                      <>
+                        <button
+                          onClick={() => handleResolveAlert(alert.id)}
+                          className="px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                        >
+                          Mark Resolved
+                        </button>
+                        <button
+                          onClick={() => handleIgnoreAlert(alert.id)}
+                          className="px-3 py-2 text-sm bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition"
+                        >
+                          Ignore
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      {/* Notification Channels */}
-      <div className="bg-white rounded-xl shadow-sm border p-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-6">Notification Channels</h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="p-4 border border-gray-200 rounded-lg">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="p-2 bg-blue-50 rounded-lg">
-                <Mail className="w-6 h-6 text-blue-600" />
-              </div>
-              <div>
-                <p className="font-medium text-gray-900">Email</p>
-                <p className="text-sm text-gray-600">admin@servicepulse.local</p>
-              </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Status</span>
-              <span className="text-sm font-medium text-green-600">✓ Active</span>
-            </div>
+            ))}
           </div>
-
-          <div className="p-4 border border-gray-200 rounded-lg">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="p-2 bg-green-50 rounded-lg">
-                <MessageSquare className="w-6 h-6 text-green-600" />
-              </div>
-              <div>
-                <p className="font-medium text-gray-900">Slack</p>
-                <p className="text-sm text-gray-600">#service-alerts</p>
-              </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Status</span>
-              <span className="text-sm font-medium text-green-600">✓ Connected</span>
-            </div>
-          </div>
-
-          <div className="p-4 border border-gray-200 rounded-lg">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="p-2 bg-purple-50 rounded-lg">
-                <Smartphone className="w-6 h-6 text-purple-600" />
-              </div>
-              <div>
-                <p className="font-medium text-gray-900">Push</p>
-                <p className="text-sm text-gray-600">Mobile devices</p>
-              </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Status</span>
-              <span className="text-sm font-medium text-yellow-600">⚠ Limited</span>
-            </div>
-          </div>
-
-          <div className="p-4 border border-gray-200 rounded-lg">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="p-2 bg-orange-50 rounded-lg">
-                <Volume2 className="w-6 h-6 text-orange-600" />
-              </div>
-              <div>
-                <p className="font-medium text-gray-900">SMS</p>
-                <p className="text-sm text-gray-600">Emergency contacts</p>
-              </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Status</span>
-              <span className="text-sm font-medium text-red-600">✗ Disabled</span>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
 };
+
+function extractModuleFromTitle(title: string): string {
+  if (title.toLowerCase().includes('network')) return 'Network';
+  if (title.toLowerCase().includes('disk') || title.toLowerCase().includes('space')) return 'Disk';
+  if (title.toLowerCase().includes('print')) return 'Printer';
+  if (title.toLowerCase().includes('service')) return 'Service';
+  return 'System';
+}
 
 export default Alerts;
